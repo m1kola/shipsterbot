@@ -8,24 +8,10 @@ import (
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
-// Available operations
-const (
-	operationAdd = "ADD"
-)
-
-// Map of not finished operations
-// TODO: This should, probably stored in DB for scalability
-type unfinishedOperation struct {
-	Operation string
-	Time      time.Time
-}
-
-type unfinishedOperationsByUserID map[int]*unfinishedOperation
-
 var unfinishedOperations unfinishedOperationsByUserID
 
 // HandleUpdates starts infinite loop that receives
-// updates from telegram
+// updates from Telegram.
 func HandleUpdates(bot *tgbotapi.BotAPI, updates <-chan tgbotapi.Update) {
 	unfinishedOperations = make(unfinishedOperationsByUserID)
 
@@ -80,6 +66,10 @@ func handleMessageEntities(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool
 	return false
 }
 
+// handleMessage handles unfinshed operations.
+// Normally we listen to user's commands (`MessageEntities` of type `bot_command`)
+// or using keyboard, but in some cases we need to handle message text.
+// For example, when user asks us to add an item into the shopping list
 func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
 	session, ok := unfinishedOperations[message.From.ID]
 
@@ -90,7 +80,6 @@ func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
 			handleAddSession(bot, message)
 			return true
 		}
-
 	}
 
 	return false
