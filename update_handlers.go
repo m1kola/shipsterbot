@@ -3,62 +3,97 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
+// Available operations
+const (
+	operationAdd = "ADD"
+)
+
+// Map of not finished operations
+// TODO: This should, probably stored in DB for scalability
+type unfinishedOperation struct {
+	Operation string
+	Time      time.Time
+}
+
+type unfinishedOperationsByUserID map[int]*unfinishedOperation
+
+var unfinishedOperations unfinishedOperationsByUserID
+
 // HandleUpdates starts infinite loop that receives
 // updates from telegram
 func HandleUpdates(bot *tgbotapi.BotAPI, updates <-chan tgbotapi.Update) {
+	unfinishedOperations = make(unfinishedOperationsByUserID)
+
 	for update := range updates {
 		if update.Message == nil {
 			continue
 		}
+		log.Printf("Message received: %s", update.Message.Text)
 
-		if update.Message.Entities == nil {
-			log.Printf(
-				"Message without commands received: %s",
-				update.Message.Text)
-			go handleUnknownCommand(bot, update.Message)
+		isHandled := handleMessageEntities(bot, update.Message)
+		if !isHandled {
+			isHandled = handleMessage(bot, update.Message)
+
+			if !isHandled {
+				log.Print("No supported bot commands found")
+				go handleUnrecognisedMessage(bot, update.Message)
+			}
+		}
+	}
+}
+
+// handleMessageEntities returns true if the message is handled
+func handleMessageEntities(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
+	if message.Entities == nil {
+		return false
+	}
+
+	for _, entity := range *message.Entities {
+		if entity.Type != "bot_command" {
 			continue
 		}
 
-		log.Printf("Message received: %s", update.Message.Text)
+		// Get command name without the leading slash
+		// TODO: handle out of range panic here
+		botCommand := message.Text[entity.Offset+1 : entity.Offset+entity.Length]
 
-		// sendHelpMessage indicates that we should
-		// send a help message after processing.
-		var sendHelpMessage bool
-		for _, entity := range *update.Message.Entities {
-			if entity.Type != "bot_command" {
-				sendHelpMessage = true
-				continue
-			}
-			sendHelpMessage = false
-
-			// Get command name without the leading slash
-			// TODO: handle out of range panic here
-			botCommand := update.Message.Text[entity.Offset+1 : entity.Offset+entity.Length]
-
-			switch {
-			case botCommand == "help" || botCommand == "start":
-				go handleStart(bot, update.Message)
-			case botCommand == "add":
-				go handleAdd(bot, update.Message)
-			case botCommand == "del":
-				go handleDel(bot, update.Message)
-			default:
-				sendHelpMessage = true
-			}
-
-			// Support only one command per message, for now
-			break
-		}
-
-		if sendHelpMessage {
-			log.Print("No supported bot commands found")
-			go handleUnknownCommand(bot, update.Message)
+		switch botCommand {
+		case "help", "start":
+			go handleStart(bot, message)
+			return true
+		case "add":
+			go handleAdd(bot, message)
+			return true
+		case "del":
+			go handleDel(bot, message)
+			return true
+		default:
+			continue
 		}
 	}
+
+	return false
+}
+
+func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
+	session, ok := unfinishedOperations[message.From.ID]
+
+	if ok {
+		switch session.Operation {
+		case operationAdd:
+			delete(unfinishedOperations, message.From.ID)
+			handleAddSession(bot, message)
+			return true
+		}
+
+	}
+
+	return false
 }
 
 func _handleHelpMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message, isStart bool) {
@@ -90,13 +125,23 @@ func handleStart(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	_handleHelpMessage(bot, message, true)
 }
 
-func handleUnknownCommand(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+func handleUnrecognisedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	_handleHelpMessage(bot, message, false)
 }
 
 func handleAdd(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
-	text := "Not implemented yet, sorry"
+	unfinishedOperations[message.From.ID] = &unfinishedOperation{
+		Operation: operationAdd,
+		Time:      time.Now()}
 
+	text := "Ok, what do you want to add into your shopping list?"
+	msg := tgbotapi.NewMessage(message.Chat.ID, text)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	bot.Send(msg)
+}
+
+func handleAddSession(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+	text := "Lovely! I've added the item into your shopping list. Anythin else?"
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	bot.Send(msg)

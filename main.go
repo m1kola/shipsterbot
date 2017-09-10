@@ -28,9 +28,10 @@ func main() {
 
 	updates := bot.ListenForWebhook(fmt.Sprintf("/%s/webhook", bot.Token))
 	go HandleUpdates(bot, updates)
-	http.ListenAndServeTLS(
-		":8443",
-		os.Getenv("TLS_CERT_PATH"),
-		os.Getenv("TLS_KEY_PATH"),
-		nil)
+	log.Fatal(
+		http.ListenAndServeTLS(
+			":8443",
+			os.Getenv("TLS_CERT_PATH"),
+			os.Getenv("TLS_KEY_PATH"),
+			nil))
 }
