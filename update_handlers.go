@@ -8,12 +8,16 @@ import (
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
+// TODO: Define interface for handlers
+
 var unfinishedOperations unfinishedOperationsByUserID
+var items shoppingItemsByChatID
 
 // HandleUpdates starts infinite loop that receives
 // updates from Telegram.
 func HandleUpdates(bot *tgbotapi.BotAPI, updates <-chan tgbotapi.Update) {
 	unfinishedOperations = make(unfinishedOperationsByUserID)
+	items = make(shoppingItemsByChatID)
 
 	for update := range updates {
 		if update.Message == nil {
@@ -54,6 +58,9 @@ func handleMessageEntities(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool
 			return true
 		case "add":
 			go handleAdd(bot, message)
+			return true
+		case "list":
+			go handleList(bot, message)
 			return true
 		case "del":
 			go handleDel(bot, message)
@@ -101,6 +108,7 @@ func _handleHelpMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message, isStart
 	*Shopping list*
 
 	/add - Adds an item into your shopping list
+	/list - Displays items from your shopping list
 	/del - Removesan item from your shopping list
 	`
 	text := fmt.Sprintf(textTemplate, message.From.FirstName)
@@ -129,8 +137,39 @@ func handleAdd(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	bot.Send(msg)
 }
 
+func handleList(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+	var text string
+	chatID := message.Chat.ID
+
+	chatItems, ok := items[chatID]
+	if !ok || chatItems == nil {
+		text = "Your shopping list is empty. Who knows, maybe it's a good thing"
+	} else {
+		text = "Here is the list item in your shopping list:\n\n"
+
+		// TODO: Add space offset for indexes
+		for index, item := range chatItems {
+			text += fmt.Sprintf("%d. %s\n", index+1, item.Name)
+		}
+	}
+
+	msg := tgbotapi.NewMessage(message.Chat.ID, text)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	bot.Send(msg)
+}
+
 func handleAddSession(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
-	text := "Lovely! I've added the item into your shopping list. Anythin else?"
+	// TODO: We should, probably cleanup text (remove @UserNameBot, etc)
+	itemName := message.Text
+
+	items[message.Chat.ID] = append(items[message.Chat.ID], &shoppingItem{
+		Name:      itemName,
+		IsActive:  true,
+		CreatedBy: message.From.ID,
+		CreatedAt: time.Now()})
+
+	text := "Lovely! I've added \"%s\" into your shopping list. Anything else?"
+	text = fmt.Sprintf(text, itemName)
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	bot.Send(msg)
