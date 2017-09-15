@@ -74,12 +74,12 @@ func handleMessageEntities(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool
 // or using keyboard, but in some cases we need to handle message text.
 // For example, when user asks us to add an item into the shopping list
 func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
-	session, ok := storage.GetUnfinishedOperation(message.From.ID)
+	session, ok := storage.GetUnfinishedCommand(message.From.ID)
 
 	if ok {
-		switch session.Operation {
-		case types.OperationAdd:
-			storage.DeleteUnfinishedOperation(message.From.ID)
+		switch session.Command {
+		case types.CommandAddShoppingItem:
+			storage.DeleteUnfinishedCommand(message.From.ID)
 			handleAddSession(bot, message)
 			return true
 		}
@@ -123,7 +123,8 @@ func handleUnrecognisedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) 
 }
 
 func handleAdd(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
-	storage.AddUnfinishedOperation(message.From.ID, types.OperationAdd)
+	storage.AddUnfinishedCommand(message.From.ID,
+		types.CommandAddShoppingItem)
 
 	text := "Ok, what do you want to add into your shopping list?"
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
@@ -142,7 +143,7 @@ func handleList(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 		text = "Here is the list item in your shopping list:\n\n"
 
 		// TODO: Add space offset for indexes
-		for index, item := range *chatItems {
+		for index, item := range chatItems {
 			text += fmt.Sprintf("%d. %s\n", index+1, item.Name)
 		}
 	}
