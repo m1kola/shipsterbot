@@ -3,22 +3,18 @@ package main
 import (
 	"fmt"
 	"log"
-	"time"
+
+	"github.com/m1kola/telegram_shipsterbot/storage"
+	"github.com/m1kola/telegram_shipsterbot/types"
 
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
 // TODO: Define interface for handlers
 
-var unfinishedOperations unfinishedOperationsByUserID
-var items shoppingItemsByChatID
-
 // HandleUpdates starts infinite loop that receives
 // updates from Telegram.
 func HandleUpdates(bot *tgbotapi.BotAPI, updates <-chan tgbotapi.Update) {
-	unfinishedOperations = make(unfinishedOperationsByUserID)
-	items = make(shoppingItemsByChatID)
-
 	for update := range updates {
 		if update.Message == nil {
 			continue
@@ -78,12 +74,12 @@ func handleMessageEntities(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool
 // or using keyboard, but in some cases we need to handle message text.
 // For example, when user asks us to add an item into the shopping list
 func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
-	session, ok := unfinishedOperations[message.From.ID]
+	session, ok := storage.GetUnfinishedOperation(message.From.ID)
 
 	if ok {
 		switch session.Operation {
-		case operationAdd:
-			delete(unfinishedOperations, message.From.ID)
+		case types.OperationAdd:
+			storage.DeleteUnfinishedOperation(message.From.ID)
 			handleAddSession(bot, message)
 			return true
 		}
@@ -127,9 +123,7 @@ func handleUnrecognisedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) 
 }
 
 func handleAdd(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
-	unfinishedOperations[message.From.ID] = &unfinishedOperation{
-		Operation: operationAdd,
-		Time:      time.Now()}
+	storage.AddUnfinishedOperation(message.From.ID, types.OperationAdd)
 
 	text := "Ok, what do you want to add into your shopping list?"
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
@@ -141,14 +135,14 @@ func handleList(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	var text string
 	chatID := message.Chat.ID
 
-	chatItems, ok := items[chatID]
+	chatItems, ok := storage.GetShoppingItems(chatID)
 	if !ok || chatItems == nil {
 		text = "Your shopping list is empty. Who knows, maybe it's a good thing"
 	} else {
 		text = "Here is the list item in your shopping list:\n\n"
 
 		// TODO: Add space offset for indexes
-		for index, item := range chatItems {
+		for index, item := range *chatItems {
 			text += fmt.Sprintf("%d. %s\n", index+1, item.Name)
 		}
 	}
@@ -162,11 +156,10 @@ func handleAddSession(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	// TODO: We should, probably cleanup text (remove @UserNameBot, etc)
 	itemName := message.Text
 
-	items[message.Chat.ID] = append(items[message.Chat.ID], &shoppingItem{
+	storage.AddShoppingItemIntoShoppingList(message.Chat.ID, &types.ShoppingItem{
 		Name:      itemName,
 		IsActive:  true,
-		CreatedBy: message.From.ID,
-		CreatedAt: time.Now()})
+		CreatedBy: message.From.ID})
 
 	text := "Lovely! I've added \"%s\" into your shopping list. Anything else?"
 	text = fmt.Sprintf(text, itemName)
