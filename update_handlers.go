@@ -45,8 +45,12 @@ func handleMessageEntities(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool
 		}
 
 		// Get command name without the leading slash
-		// TODO: handle out of range panic here
-		botCommand := message.Text[entity.Offset+1 : entity.Offset+entity.Length]
+		commandStartPos := entity.Offset + 1
+		commandEndPos := entity.Offset + entity.Length
+		if commandStartPos < 0 || commandEndPos > len(message.Text) {
+			return false
+		}
+		botCommand := message.Text[commandStartPos:commandEndPos]
 
 		switch botCommand {
 		case "help", "start":
