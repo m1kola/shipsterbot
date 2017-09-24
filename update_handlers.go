@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/m1kola/telegram_shipsterbot/storage"
 	"github.com/m1kola/telegram_shipsterbot/types"
@@ -86,6 +87,10 @@ func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
 			storage.DeleteUnfinishedCommand(message.From.ID)
 			handleAddSession(bot, message)
 			return true
+		case types.CommandDelShoppingItem:
+			storage.DeleteUnfinishedCommand(message.From.ID)
+			handleDelSession(bot, message)
+			return true
 		}
 	}
 
@@ -141,7 +146,7 @@ func handleList(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	chatID := message.Chat.ID
 
 	chatItems, ok := storage.GetShoppingItems(chatID)
-	if !ok || chatItems == nil {
+	if !ok || len(chatItems) == 0 {
 		text = "Your shopping list is empty. Who knows, maybe it's a good thing"
 	} else {
 		text = "Here is the list item in your shopping list:\n\n"
@@ -174,7 +179,36 @@ func handleAddSession(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 }
 
 func handleDel(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
-	text := "Not implemented yet, sorry"
+	storage.AddUnfinishedCommand(message.From.ID,
+		types.CommandDelShoppingItem)
+
+	text := "Ok, what item do you want to delete from your shopping list?"
+
+	msg := tgbotapi.NewMessage(message.Chat.ID, text)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	bot.Send(msg)
+}
+
+func handleDelSession(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+	// TODO: Use keyboard with item numbers/names
+	itemID, err := strconv.ParseInt(message.Text, 10, 64)
+	if err != nil {
+		return
+	}
+
+	var text string
+	item, ok := storage.GetShoppingItem(message.Chat.ID, itemID)
+	if ok {
+		storage.DeleteShoppingItem(message.Chat.ID, itemID)
+
+		text = "It's nice to see that you think that you don't"
+		text += "need this \"%s\" thing. "
+		text += "I've removed it from your shopping list.\n"
+		text += "Can I do anything else for you?"
+		text = fmt.Sprintf(text, item.Name)
+	} else {
+		text = "Can't find an item, sorry."
+	}
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
