@@ -43,6 +43,8 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 	switch botCommand {
 	case "del":
 		go handleDelCallbackQuery(bot, update.CallbackQuery, dataPieces[1])
+	case "clear":
+		go handleClearCallbackQuery(bot, update.CallbackQuery, dataPieces[1])
 	}
 }
 
@@ -92,6 +94,9 @@ func handleMessageEntities(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool
 		case "del":
 			go handleDel(bot, message)
 			return true
+		case "clear":
+			go handleClear(bot, message)
+			return true
 		default:
 			continue
 		}
@@ -116,6 +121,7 @@ func handleMessageText(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
 		}
 	}
 
+	// TODO: It looks like we need to delete unfinished commands if we didn't manage to find a handler
 	return false
 }
 
@@ -128,16 +134,16 @@ func _handleHelpMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message, isStart
 	}
 	textTemplate := greeting + `
 
-	I can help you to manage your shopping list.
+I can help you to manage your shopping list.
 
-	You can control me by sending these commands:
+You can control me by sending these commands:
 
-	*Shopping list*
+*Shopping list*
 
-	/add - Adds an item into your shopping list
-	/list - Displays items from your shopping list
-	/del - Removesan item from your shopping list
-	`
+/add - Adds an item into your shopping list
+/list - Displays items from your shopping list
+/del - Removes an item from your shopping list
+/clear - Removes all items from the shopping list`
 	text := fmt.Sprintf(textTemplate, message.From.FirstName)
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
@@ -251,6 +257,57 @@ func handleDelCallbackQuery(bot *tgbotapi.BotAPI, callbackQuery *tgbotapi.Callba
 		text = fmt.Sprintf(text, item.Name)
 	} else {
 		text = "Can't find an item, sorry."
+	}
+
+	// Edit previous message to hide the keyboard
+	{
+		msg := tgbotapi.NewEditMessageReplyMarkup(
+			chatID,
+			messageID,
+			tgbotapi.NewInlineKeyboardMarkup(
+				[]tgbotapi.InlineKeyboardButton{}))
+		bot.Send(msg)
+	}
+
+	// Send deletion confimration text
+	{
+		msg := tgbotapi.NewMessage(chatID, text)
+		bot.Send(msg)
+	}
+}
+
+func handleClear(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+	chatID := message.Chat.ID
+	text := "Are you sure that you want to *remove all items* from you shopping list?"
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		[]tgbotapi.InlineKeyboardButton{
+			tgbotapi.NewInlineKeyboardButtonData("Yes", "clear:1"),
+			tgbotapi.NewInlineKeyboardButtonData("Cancel", "clear:0")})
+
+	bot.Send(msg)
+}
+
+func handleClearCallbackQuery(bot *tgbotapi.BotAPI, callbackQuery *tgbotapi.CallbackQuery, data string) {
+	bot.AnswerCallbackQuery(tgbotapi.NewCallback(
+		callbackQuery.ID, ""))
+
+	chatID := callbackQuery.Message.Chat.ID
+	messageID := callbackQuery.Message.MessageID
+	confirmed, err := strconv.ParseBool(data)
+	if err != nil {
+		return
+	}
+
+	var text string
+	if confirmed {
+		text = "Ok, I've deleted all items from you shopping list.\n\nNow you can start from scratch, if you wish."
+
+		storage.DeleteAllShoppingItems(chatID)
+	} else {
+		text = "Canceling. Your items are still in your list."
 	}
 
 	// Edit previous message to hide the keyboard

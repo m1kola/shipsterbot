@@ -64,3 +64,7 @@ func DeleteShoppingItem(chatID int64, itemID int64) {
 		items[chatID] = append(shoppingList[:itemID], shoppingList[itemID+1:]...)
 	}
 }
+
+func DeleteAllShoppingItems(chatID int64) {
+	items[chatID] = []*types.ShoppingItem{}
+}
