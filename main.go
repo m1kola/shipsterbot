@@ -17,6 +17,13 @@ func isDebug() bool {
 	return os.Getenv("DEBUG") == "true"
 }
 
+func incommingRequstLogger(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
+		handler.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	bot, err := tgbotapi.NewBotAPI(getAPIToken())
 	bot.Debug = isDebug()
@@ -33,5 +40,5 @@ func main() {
 			":8443",
 			os.Getenv("TLS_CERT_PATH"),
 			os.Getenv("TLS_KEY_PATH"),
-			nil))
+			incommingRequstLogger(http.DefaultServeMux)))
 }
