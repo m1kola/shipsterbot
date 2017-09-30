@@ -17,19 +17,30 @@ import (
 // updates from Telegram.
 func HandleUpdates(bot *tgbotapi.BotAPI, updates <-chan tgbotapi.Update) {
 	for update := range updates {
-		if update.Message == nil {
-			continue
+		if update.CallbackQuery != nil {
+			handleCallbackQuery(bot, &update)
 		}
-		log.Printf("Message received: %s", update.Message.Text)
 
-		isHandled := handleMessageEntities(bot, update.Message)
+		if update.Message != nil {
+			handleMessage(bot, update.Message)
+		}
+	}
+}
+
+func handleCallbackQuery(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+	log.Print(update.CallbackQuery.Data)
+}
+
+func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+	log.Printf("Message received: %s", message.Text)
+
+	isHandled := handleMessageEntities(bot, message)
+	if !isHandled {
+		isHandled = handleMessageText(bot, message)
+
 		if !isHandled {
-			isHandled = handleMessage(bot, update.Message)
-
-			if !isHandled {
-				log.Print("No supported bot commands found")
-				go handleUnrecognisedMessage(bot, update.Message)
-			}
+			log.Print("No supported bot commands found")
+			go handleUnrecognisedMessage(bot, message)
 		}
 	}
 }
@@ -74,11 +85,11 @@ func handleMessageEntities(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool
 	return false
 }
 
-// handleMessage handles unfinshed operations.
+// handleMessageText handles unfinshed operations.
 // Normally we listen to user's commands (`MessageEntities` of type `bot_command`)
 // or using keyboard, but in some cases we need to handle message text.
 // For example, when user asks us to add an item into the shopping list
-func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
+func handleMessageText(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
 	session, ok := storage.GetUnfinishedCommand(message.From.ID)
 
 	if ok {
@@ -151,6 +162,7 @@ func handleList(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	} else {
 		offset := len(strconv.Itoa(len(chatItems)))
 		listItemFormat := fmt.Sprintf("%%%dd. %%s\n", offset)
+		// TODO: replace index with id/pk and hide storage logic in the storage module
 		for index, item := range chatItems {
 			text += fmt.Sprintf(listItemFormat, index+1, item.Name)
 		}
@@ -183,13 +195,33 @@ func handleAddSession(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 }
 
 func handleDel(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+	var text string
+	var itemButtons []tgbotapi.InlineKeyboardButton
+
 	storage.AddUnfinishedCommand(message.From.ID,
 		types.CommandDelShoppingItem)
+	chatID := message.Chat.ID
 
-	text := "Ok, what item do you want to delete from your shopping list?"
+	chatItems, ok := storage.GetShoppingItems(chatID)
+	if !ok || len(chatItems) == 0 {
+		text = "Your shopping list is empty. No need to delete items :)"
+	} else {
+		for index, item := range chatItems {
+			callbackData := strconv.Itoa(index)
+			itemButton := tgbotapi.InlineKeyboardButton{
+				Text:         item.Name,
+				CallbackData: &callbackData,
+			}
+			itemButtons = append(itemButtons, itemButton)
+		}
 
-	msg := tgbotapi.NewMessage(message.Chat.ID, text)
-	msg.ParseMode = tgbotapi.ModeMarkdown
+		text = "Ok, what item do you want to delete from your shopping list?"
+	}
+
+	msg := tgbotapi.NewMessage(chatID, text)
+	if len(itemButtons) > 0 {
+		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(itemButtons)
+	}
 	bot.Send(msg)
 }
 
