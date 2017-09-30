@@ -149,12 +149,16 @@ func handleList(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	if !ok || len(chatItems) == 0 {
 		text = "Your shopping list is empty. Who knows, maybe it's a good thing"
 	} else {
-		text = "Here is the list item in your shopping list:\n\n"
-
-		// TODO: Add space offset for indexes
+		offset := len(strconv.Itoa(len(chatItems)))
+		listItemFormat := fmt.Sprintf("%%%dd. %%s\n", offset)
 		for index, item := range chatItems {
-			text += fmt.Sprintf("%d. %s\n", index+1, item.Name)
+			text += fmt.Sprintf(listItemFormat, index+1, item.Name)
 		}
+
+		text = fmt.Sprintf(
+			"%s\n\n```\n%s```",
+			"Here is the list item in your shopping list:",
+			text)
 	}
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
