@@ -215,7 +215,8 @@ func handleDel(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 
 	chatID := message.Chat.ID
 	chatItems, ok := storage.GetShoppingItems(chatID)
-	if !ok || len(chatItems) == 0 {
+	isEmpty := !ok || len(chatItems) == 0
+	if isEmpty {
 		text = "Your shopping list is empty. No need to delete items :)"
 	} else {
 		for index, item := range chatItems {
@@ -228,7 +229,7 @@ func handleDel(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	}
 
 	msg := tgbotapi.NewMessage(chatID, text)
-	if len(itemButtons) > 0 {
+	if !isEmpty {
 		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(itemButtons)
 	}
 	bot.Send(msg)
@@ -277,16 +278,25 @@ func handleDelCallbackQuery(bot *tgbotapi.BotAPI, callbackQuery *tgbotapi.Callba
 }
 
 func handleClear(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+	var text string
+
 	chatID := message.Chat.ID
-	text := "Are you sure that you want to *remove all items* from you shopping list?"
+
+	chatItems, ok := storage.GetShoppingItems(chatID)
+	isEmpty := !ok || len(chatItems) == 0
+	if isEmpty {
+		text = "Your shopping list is empty. No need to delete items :)"
+	} else {
+		text = "Are you sure that you want to *remove all items* from you shopping list?"
+	}
 
 	msg := tgbotapi.NewMessage(chatID, text)
-	msg.ParseMode = tgbotapi.ModeMarkdown
-	msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
-		[]tgbotapi.InlineKeyboardButton{
-			tgbotapi.NewInlineKeyboardButtonData("Yes", "clear:1"),
-			tgbotapi.NewInlineKeyboardButtonData("Cancel", "clear:0")})
-
+	if !isEmpty {
+		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+			[]tgbotapi.InlineKeyboardButton{
+				tgbotapi.NewInlineKeyboardButtonData("Yes", "clear:1"),
+				tgbotapi.NewInlineKeyboardButtonData("Cancel", "clear:0")})
+	}
 	bot.Send(msg)
 }
 
