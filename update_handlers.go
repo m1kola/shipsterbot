@@ -217,7 +217,7 @@ func handleDel(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	chatItems, ok := storage.GetShoppingItems(chatID)
 	isEmpty := !ok || len(chatItems) == 0
 	if isEmpty {
-		text = "Your shopping list is empty. No need to delete items :)"
+		text = "Your shopping list is empty. No need to delete items 🙂"
 	} else {
 		for index, item := range chatItems {
 			callbackData := fmt.Sprintf("del:%s", strconv.Itoa(index+1))
@@ -285,7 +285,7 @@ func handleClear(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	chatItems, ok := storage.GetShoppingItems(chatID)
 	isEmpty := !ok || len(chatItems) == 0
 	if isEmpty {
-		text = "Your shopping list is empty. No need to delete items :)"
+		text = "Your shopping list is empty. No need to delete items 🙂"
 	} else {
 		text = "Are you sure that you want to *remove all items* from you shopping list?"
 	}
