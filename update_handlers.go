@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/m1kola/telegram_shipsterbot/storage"
 	"github.com/m1kola/telegram_shipsterbot/types"
@@ -28,7 +29,21 @@ func HandleUpdates(bot *tgbotapi.BotAPI, updates <-chan tgbotapi.Update) {
 }
 
 func handleCallbackQuery(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
-	log.Print(update.CallbackQuery.Data)
+	if update.CallbackQuery.Message == nil {
+		return
+	}
+
+	dataPieces := strings.SplitN(update.CallbackQuery.Data, ":", 2)
+	if len(dataPieces) != 2 {
+		return
+	}
+
+	botCommand := dataPieces[0]
+
+	switch botCommand {
+	case "del":
+		go handleDelCallbackQuery(bot, update.CallbackQuery, dataPieces[1])
+	}
 }
 
 func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
@@ -96,11 +111,7 @@ func handleMessageText(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
 		switch session.Command {
 		case types.CommandAddShoppingItem:
 			storage.DeleteUnfinishedCommand(message.From.ID)
-			handleAddSession(bot, message)
-			return true
-		case types.CommandDelShoppingItem:
-			storage.DeleteUnfinishedCommand(message.From.ID)
-			handleDelSession(bot, message)
+			go handleAddSession(bot, message)
 			return true
 		}
 	}
@@ -148,7 +159,6 @@ func handleAdd(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 
 	text := "Ok, what do you want to add into your shopping list?"
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
-	msg.ParseMode = tgbotapi.ModeMarkdown
 	bot.Send(msg)
 }
 
@@ -190,7 +200,6 @@ func handleAddSession(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	text := "Lovely! I've added \"%s\" into your shopping list. Anything else?"
 	text = fmt.Sprintf(text, itemName)
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
-	msg.ParseMode = tgbotapi.ModeMarkdown
 	bot.Send(msg)
 }
 
@@ -198,20 +207,14 @@ func handleDel(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	var text string
 	var itemButtons []tgbotapi.InlineKeyboardButton
 
-	storage.AddUnfinishedCommand(message.From.ID,
-		types.CommandDelShoppingItem)
 	chatID := message.Chat.ID
-
 	chatItems, ok := storage.GetShoppingItems(chatID)
 	if !ok || len(chatItems) == 0 {
 		text = "Your shopping list is empty. No need to delete items :)"
 	} else {
 		for index, item := range chatItems {
-			callbackData := strconv.Itoa(index)
-			itemButton := tgbotapi.InlineKeyboardButton{
-				Text:         item.Name,
-				CallbackData: &callbackData,
-			}
+			callbackData := fmt.Sprintf("del:%s", strconv.Itoa(index+1))
+			itemButton := tgbotapi.NewInlineKeyboardButtonData(item.Name, callbackData)
 			itemButtons = append(itemButtons, itemButton)
 		}
 
@@ -225,28 +228,44 @@ func handleDel(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	bot.Send(msg)
 }
 
-func handleDelSession(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
-	// TODO: Use keyboard with item numbers/names
-	itemID, err := strconv.ParseInt(message.Text, 10, 64)
+func handleDelCallbackQuery(bot *tgbotapi.BotAPI, callbackQuery *tgbotapi.CallbackQuery, data string) {
+	bot.AnswerCallbackQuery(tgbotapi.NewCallback(
+		callbackQuery.ID, ""))
+
+	chatID := callbackQuery.Message.Chat.ID
+	messageID := callbackQuery.Message.MessageID
+	itemID, err := strconv.ParseInt(data, 10, 64)
 	if err != nil {
 		return
 	}
 
 	var text string
-	item, ok := storage.GetShoppingItem(message.Chat.ID, itemID)
+	item, ok := storage.GetShoppingItem(chatID, itemID)
 	if ok {
-		storage.DeleteShoppingItem(message.Chat.ID, itemID)
+		storage.DeleteShoppingItem(chatID, itemID)
 
 		text = "It's nice to see that you think that you don't"
 		text += "need this \"%s\" thing. "
-		text += "I've removed it from your shopping list.\n"
+		text += "I've removed it from your shopping list.\n\n"
 		text += "Can I do anything else for you?"
 		text = fmt.Sprintf(text, item.Name)
 	} else {
 		text = "Can't find an item, sorry."
 	}
 
-	msg := tgbotapi.NewMessage(message.Chat.ID, text)
-	msg.ParseMode = tgbotapi.ModeMarkdown
-	bot.Send(msg)
+	// Edit previous message to hide the keyboard
+	{
+		msg := tgbotapi.NewEditMessageReplyMarkup(
+			chatID,
+			messageID,
+			tgbotapi.NewInlineKeyboardMarkup(
+				[]tgbotapi.InlineKeyboardButton{}))
+		bot.Send(msg)
+	}
+
+	// Send deletion confimration text
+	{
+		msg := tgbotapi.NewMessage(chatID, text)
+		bot.Send(msg)
+	}
 }

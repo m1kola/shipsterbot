@@ -11,7 +11,6 @@ type Command string
 const (
 	// CommandAddShoppingItem represents adding into a shopping cart
 	CommandAddShoppingItem = Command("ADD_SHOPPING_ITEM")
-	CommandDelShoppingItem = Command("DEL_SHOPPING_ITEM")
 	// TODO: Decide if we need to have all bot commands here
 )
 
