@@ -1,13 +1,19 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/m1kola/telegram_shipsterbot/bot"
+	"github.com/m1kola/telegram_shipsterbot/storage"
+
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
+
+func getDBConnectionString() string {
+	return os.Getenv("DATABASE_URL")
+}
 
 func getAPIToken() string {
 	return os.Getenv("TELEGRAM_API_TOKEN")
@@ -25,16 +31,18 @@ func incommingRequstLogger(handler http.Handler) http.Handler {
 }
 
 func main() {
-	bot, err := tgbotapi.NewBotAPI(getAPIToken())
-	bot.Debug = isDebug()
+	// Initialise bot instance
+	tgbot, err := tgbotapi.NewBotAPI(getAPIToken())
+	tgbot.Debug = isDebug()
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Printf("Authorised on account %s", tgbot.Self.UserName)
 
-	log.Printf("Authorised on account %s", bot.Self.UserName)
-
-	updates := bot.ListenForWebhook(fmt.Sprintf("/%s/webhook", bot.Token))
-	go HandleUpdates(bot, updates)
+	bot_app := bot.BotApp{
+		Bot:     tgbot,
+		Storage: storage.DatabaseStorage{}}
+	bot_app.ListenForWebhook()
 	log.Fatal(
 		http.ListenAndServeTLS(
 			":8443",

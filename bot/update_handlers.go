@@ -1,4 +1,4 @@
-package main
+package bot
 
 import (
 	"fmt"
@@ -6,29 +6,33 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/m1kola/telegram_shipsterbot/storage"
-	"github.com/m1kola/telegram_shipsterbot/types"
-
+	"github.com/m1kola/telegram_shipsterbot/models"
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
 // TODO: Define interface for handlers
 
-// HandleUpdates starts infinite loop that receives
+// ListenForWebhook starts infinite loop that receives
 // updates from Telegram.
-func HandleUpdates(bot *tgbotapi.BotAPI, updates <-chan tgbotapi.Update) {
+func (bot_app BotApp) ListenForWebhook() {
+	updates := bot_app.Bot.ListenForWebhook(fmt.Sprintf("/%s/webhook", bot_app.Bot.Token))
+
+	go bot_app.handleUpdates(updates)
+}
+
+func (bot_app BotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 	for update := range updates {
 		if update.CallbackQuery != nil {
-			handleCallbackQuery(bot, &update)
+			bot_app.handleCallbackQuery(&update)
 		}
 
 		if update.Message != nil {
-			handleMessage(bot, update.Message)
+			bot_app.handleMessage(update.Message)
 		}
 	}
 }
 
-func handleCallbackQuery(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
+func (bot_app BotApp) handleCallbackQuery(update *tgbotapi.Update) {
 	if update.CallbackQuery.Message == nil {
 		return
 	}
@@ -42,28 +46,28 @@ func handleCallbackQuery(bot *tgbotapi.BotAPI, update *tgbotapi.Update) {
 
 	switch botCommand {
 	case "del":
-		go handleDelCallbackQuery(bot, update.CallbackQuery, dataPieces[1])
+		go bot_app.handleDelCallbackQuery(update.CallbackQuery, dataPieces[1])
 	case "clear":
-		go handleClearCallbackQuery(bot, update.CallbackQuery, dataPieces[1])
+		go bot_app.handleClearCallbackQuery(update.CallbackQuery, dataPieces[1])
 	}
 }
 
-func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+func (bot_app BotApp) handleMessage(message *tgbotapi.Message) {
 	log.Printf("Message received: %s", message.Text)
 
-	isHandled := handleMessageEntities(bot, message)
+	isHandled := bot_app.handleMessageEntities(message)
 	if !isHandled {
-		isHandled = handleMessageText(bot, message)
+		isHandled = bot_app.handleMessageText(message)
 
 		if !isHandled {
 			log.Print("No supported bot commands found")
-			go handleUnrecognisedMessage(bot, message)
+			go bot_app.handleUnrecognisedMessage(message)
 		}
 	}
 }
 
 // handleMessageEntities returns true if the message is handled
-func handleMessageEntities(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
+func (bot_app BotApp) handleMessageEntities(message *tgbotapi.Message) bool {
 	if message.Entities == nil {
 		return false
 	}
@@ -83,19 +87,19 @@ func handleMessageEntities(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool
 
 		switch botCommand {
 		case "help", "start":
-			go handleStart(bot, message)
+			go bot_app.handleStart(message)
 			return true
 		case "add":
-			go handleAdd(bot, message)
+			go bot_app.handleAdd(message)
 			return true
 		case "list":
-			go handleList(bot, message)
+			go bot_app.handleList(message)
 			return true
 		case "del":
-			go handleDel(bot, message)
+			go bot_app.handleDel(message)
 			return true
 		case "clear":
-			go handleClear(bot, message)
+			go bot_app.handleClear(message)
 			return true
 		default:
 			continue
@@ -109,14 +113,14 @@ func handleMessageEntities(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool
 // Normally we listen to user's commands (`MessageEntities` of type `bot_command`)
 // or using keyboard, but in some cases we need to handle message text.
 // For example, when user asks us to add an item into the shopping list
-func handleMessageText(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
-	session, ok := storage.GetUnfinishedCommand(message.From.ID)
+func (bot_app BotApp) handleMessageText(message *tgbotapi.Message) bool {
+	session, ok := bot_app.Storage.GetUnfinishedCommand(message.From.ID)
 
 	if ok {
 		switch session.Command {
-		case types.CommandAddShoppingItem:
-			storage.DeleteUnfinishedCommand(message.From.ID)
-			go handleAddSession(bot, message)
+		case models.CommandAddShoppingItem:
+			bot_app.Storage.DeleteUnfinishedCommand(message.From.ID)
+			go bot_app.handleAddSession(message)
 			return true
 		}
 	}
@@ -125,7 +129,7 @@ func handleMessageText(bot *tgbotapi.BotAPI, message *tgbotapi.Message) bool {
 	return false
 }
 
-func _handleHelpMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message, isStart bool) {
+func (bot_app BotApp) _handleHelpMessage(message *tgbotapi.Message, isStart bool) {
 	var greeting string
 	if isStart {
 		greeting = "Hi %s,"
@@ -148,31 +152,31 @@ You can control me by sending these commands:
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
-	bot.Send(msg)
+	bot_app.Bot.Send(msg)
 }
 
-func handleStart(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
-	_handleHelpMessage(bot, message, true)
+func (bot_app BotApp) handleStart(message *tgbotapi.Message) {
+	bot_app._handleHelpMessage(message, true)
 }
 
-func handleUnrecognisedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
-	_handleHelpMessage(bot, message, false)
+func (bot_app BotApp) handleUnrecognisedMessage(message *tgbotapi.Message) {
+	bot_app._handleHelpMessage(message, false)
 }
 
-func handleAdd(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
-	storage.AddUnfinishedCommand(message.From.ID,
-		types.CommandAddShoppingItem)
+func (bot_app BotApp) handleAdd(message *tgbotapi.Message) {
+	bot_app.Storage.AddUnfinishedCommand(message.From.ID,
+		models.CommandAddShoppingItem)
 
 	text := "Ok, what do you want to add into your shopping list?"
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
-	bot.Send(msg)
+	bot_app.Bot.Send(msg)
 }
 
-func handleList(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+func (bot_app BotApp) handleList(message *tgbotapi.Message) {
 	var text string
 	chatID := message.Chat.ID
 
-	chatItems, ok := storage.GetShoppingItems(chatID)
+	chatItems, ok := bot_app.Storage.GetShoppingItems(chatID)
 	if !ok || len(chatItems) == 0 {
 		text = "Your shopping list is empty. Who knows, maybe it's a good thing"
 	} else {
@@ -191,14 +195,14 @@ func handleList(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
-	bot.Send(msg)
+	bot_app.Bot.Send(msg)
 }
 
-func handleAddSession(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+func (bot_app BotApp) handleAddSession(message *tgbotapi.Message) {
 	// TODO: We should, probably cleanup text (remove @UserNameBot, etc)
 	itemName := message.Text
 
-	storage.AddShoppingItemIntoShoppingList(message.Chat.ID, &types.ShoppingItem{
+	bot_app.Storage.AddShoppingItemIntoShoppingList(message.Chat.ID, &models.ShoppingItem{
 		Name:      itemName,
 		IsActive:  true,
 		CreatedBy: message.From.ID})
@@ -206,15 +210,15 @@ func handleAddSession(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	text := "Lovely! I've added \"%s\" into your shopping list. Anything else?"
 	text = fmt.Sprintf(text, itemName)
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
-	bot.Send(msg)
+	bot_app.Bot.Send(msg)
 }
 
-func handleDel(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+func (bot_app BotApp) handleDel(message *tgbotapi.Message) {
 	var text string
 	var itemButtons []tgbotapi.InlineKeyboardButton
 
 	chatID := message.Chat.ID
-	chatItems, ok := storage.GetShoppingItems(chatID)
+	chatItems, ok := bot_app.Storage.GetShoppingItems(chatID)
 	isEmpty := !ok || len(chatItems) == 0
 	if isEmpty {
 		text = "Your shopping list is empty. No need to delete items 🙂"
@@ -232,11 +236,11 @@ func handleDel(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	if !isEmpty {
 		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(itemButtons)
 	}
-	bot.Send(msg)
+	bot_app.Bot.Send(msg)
 }
 
-func handleDelCallbackQuery(bot *tgbotapi.BotAPI, callbackQuery *tgbotapi.CallbackQuery, data string) {
-	bot.AnswerCallbackQuery(tgbotapi.NewCallback(
+func (bot_app BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) {
+	bot_app.Bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
 	chatID := callbackQuery.Message.Chat.ID
@@ -247,9 +251,9 @@ func handleDelCallbackQuery(bot *tgbotapi.BotAPI, callbackQuery *tgbotapi.Callba
 	}
 
 	var text string
-	item, ok := storage.GetShoppingItem(chatID, itemID)
+	item, ok := bot_app.Storage.GetShoppingItem(chatID, itemID)
 	if ok {
-		storage.DeleteShoppingItem(chatID, itemID)
+		bot_app.Storage.DeleteShoppingItem(chatID, itemID)
 
 		text = "It's nice to see that you think that you don't"
 		text += "need this \"%s\" thing. "
@@ -267,22 +271,22 @@ func handleDelCallbackQuery(bot *tgbotapi.BotAPI, callbackQuery *tgbotapi.Callba
 			messageID,
 			tgbotapi.NewInlineKeyboardMarkup(
 				[]tgbotapi.InlineKeyboardButton{}))
-		bot.Send(msg)
+		bot_app.Bot.Send(msg)
 	}
 
 	// Send deletion confimration text
 	{
 		msg := tgbotapi.NewMessage(chatID, text)
-		bot.Send(msg)
+		bot_app.Bot.Send(msg)
 	}
 }
 
-func handleClear(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+func (bot_app BotApp) handleClear(message *tgbotapi.Message) {
 	var text string
 
 	chatID := message.Chat.ID
 
-	chatItems, ok := storage.GetShoppingItems(chatID)
+	chatItems, ok := bot_app.Storage.GetShoppingItems(chatID)
 	isEmpty := !ok || len(chatItems) == 0
 	if isEmpty {
 		text = "Your shopping list is empty. No need to delete items 🙂"
@@ -297,11 +301,11 @@ func handleClear(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 				tgbotapi.NewInlineKeyboardButtonData("Yes", "clear:1"),
 				tgbotapi.NewInlineKeyboardButtonData("Cancel", "clear:0")})
 	}
-	bot.Send(msg)
+	bot_app.Bot.Send(msg)
 }
 
-func handleClearCallbackQuery(bot *tgbotapi.BotAPI, callbackQuery *tgbotapi.CallbackQuery, data string) {
-	bot.AnswerCallbackQuery(tgbotapi.NewCallback(
+func (bot_app BotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) {
+	bot_app.Bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
 	chatID := callbackQuery.Message.Chat.ID
@@ -315,7 +319,7 @@ func handleClearCallbackQuery(bot *tgbotapi.BotAPI, callbackQuery *tgbotapi.Call
 	if confirmed {
 		text = "Ok, I've deleted all items from you shopping list.\n\nNow you can start from scratch, if you wish."
 
-		storage.DeleteAllShoppingItems(chatID)
+		bot_app.Storage.DeleteAllShoppingItems(chatID)
 	} else {
 		text = "Canceling. Your items are still in your list."
 	}
@@ -327,12 +331,12 @@ func handleClearCallbackQuery(bot *tgbotapi.BotAPI, callbackQuery *tgbotapi.Call
 			messageID,
 			tgbotapi.NewInlineKeyboardMarkup(
 				[]tgbotapi.InlineKeyboardButton{}))
-		bot.Send(msg)
+		bot_app.Bot.Send(msg)
 	}
 
 	// Send deletion confimration text
 	{
 		msg := tgbotapi.NewMessage(chatID, text)
-		bot.Send(msg)
+		bot_app.Bot.Send(msg)
 	}
 }

@@ -1,9 +1,6 @@
-package types
+package models
 
-// Available operations
-import (
-	"time"
-)
+import "time"
 
 // Command represents an abstract action
 type Command string
