@@ -7,20 +7,26 @@ import (
 	"strings"
 
 	"github.com/m1kola/telegram_shipsterbot/models"
+	"github.com/m1kola/telegram_shipsterbot/storage"
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
-// TODO: Define interface for handlers
+// TelegramBotApp is a struct for handeling iteractions
+// with the Telegram API
+type TelegramBotApp struct {
+	Bot     *tgbotapi.BotAPI
+	Storage storage.DataStorageInterface
+}
 
 // ListenForWebhook starts infinite loop that receives
 // updates from Telegram.
-func (bot_app BotApp) ListenForWebhook() {
+func (bot_app TelegramBotApp) ListenForWebhook() {
 	updates := bot_app.Bot.ListenForWebhook(fmt.Sprintf("/%s/webhook", bot_app.Bot.Token))
 
 	go bot_app.handleUpdates(updates)
 }
 
-func (bot_app BotApp) handleUpdates(updates <-chan tgbotapi.Update) {
+func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 	for update := range updates {
 		if update.CallbackQuery != nil {
 			bot_app.handleCallbackQuery(&update)
@@ -32,7 +38,7 @@ func (bot_app BotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 	}
 }
 
-func (bot_app BotApp) handleCallbackQuery(update *tgbotapi.Update) {
+func (bot_app TelegramBotApp) handleCallbackQuery(update *tgbotapi.Update) {
 	if update.CallbackQuery.Message == nil {
 		return
 	}
@@ -52,7 +58,7 @@ func (bot_app BotApp) handleCallbackQuery(update *tgbotapi.Update) {
 	}
 }
 
-func (bot_app BotApp) handleMessage(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleMessage(message *tgbotapi.Message) {
 	log.Printf("Message received: %s", message.Text)
 
 	isHandled := bot_app.handleMessageEntities(message)
@@ -67,7 +73,7 @@ func (bot_app BotApp) handleMessage(message *tgbotapi.Message) {
 }
 
 // handleMessageEntities returns true if the message is handled
-func (bot_app BotApp) handleMessageEntities(message *tgbotapi.Message) bool {
+func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) bool {
 	if message.Entities == nil {
 		return false
 	}
@@ -113,7 +119,7 @@ func (bot_app BotApp) handleMessageEntities(message *tgbotapi.Message) bool {
 // Normally we listen to user's commands (`MessageEntities` of type `bot_command`)
 // or using keyboard, but in some cases we need to handle message text.
 // For example, when user asks us to add an item into the shopping list
-func (bot_app BotApp) handleMessageText(message *tgbotapi.Message) bool {
+func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) bool {
 	session, ok := bot_app.Storage.GetUnfinishedCommand(message.From.ID)
 
 	if ok {
@@ -125,11 +131,11 @@ func (bot_app BotApp) handleMessageText(message *tgbotapi.Message) bool {
 		}
 	}
 
-	// TODO: It looks like we need to delete unfinished commands if we didn't manage to find a handler
+	// TODO: Delete unfinished commands, if we didn't manage to find a handler
 	return false
 }
 
-func (bot_app BotApp) _handleHelpMessage(message *tgbotapi.Message, isStart bool) {
+func (bot_app TelegramBotApp) _handleHelpMessage(message *tgbotapi.Message, isStart bool) {
 	var greeting string
 	if isStart {
 		greeting = "Hi %s,"
@@ -155,15 +161,15 @@ You can control me by sending these commands:
 	bot_app.Bot.Send(msg)
 }
 
-func (bot_app BotApp) handleStart(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleStart(message *tgbotapi.Message) {
 	bot_app._handleHelpMessage(message, true)
 }
 
-func (bot_app BotApp) handleUnrecognisedMessage(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleUnrecognisedMessage(message *tgbotapi.Message) {
 	bot_app._handleHelpMessage(message, false)
 }
 
-func (bot_app BotApp) handleAdd(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) {
 	bot_app.Storage.AddUnfinishedCommand(message.From.ID,
 		models.CommandAddShoppingItem)
 
@@ -172,7 +178,7 @@ func (bot_app BotApp) handleAdd(message *tgbotapi.Message) {
 	bot_app.Bot.Send(msg)
 }
 
-func (bot_app BotApp) handleList(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) {
 	var text string
 	chatID := message.Chat.ID
 
@@ -198,7 +204,7 @@ func (bot_app BotApp) handleList(message *tgbotapi.Message) {
 	bot_app.Bot.Send(msg)
 }
 
-func (bot_app BotApp) handleAddSession(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) {
 	// TODO: We should, probably cleanup text (remove @UserNameBot, etc)
 	itemName := message.Text
 
@@ -213,7 +219,7 @@ func (bot_app BotApp) handleAddSession(message *tgbotapi.Message) {
 	bot_app.Bot.Send(msg)
 }
 
-func (bot_app BotApp) handleDel(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleDel(message *tgbotapi.Message) {
 	var text string
 	var itemButtons []tgbotapi.InlineKeyboardButton
 
@@ -223,6 +229,7 @@ func (bot_app BotApp) handleDel(message *tgbotapi.Message) {
 	if isEmpty {
 		text = "Your shopping list is empty. No need to delete items 🙂"
 	} else {
+		// TODO: replace index with id/pk and hide storage logic in the storage module
 		for index, item := range chatItems {
 			callbackData := fmt.Sprintf("del:%s", strconv.Itoa(index+1))
 			itemButton := tgbotapi.NewInlineKeyboardButtonData(item.Name, callbackData)
@@ -239,7 +246,7 @@ func (bot_app BotApp) handleDel(message *tgbotapi.Message) {
 	bot_app.Bot.Send(msg)
 }
 
-func (bot_app BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) {
+func (bot_app TelegramBotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) {
 	bot_app.Bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
@@ -281,7 +288,7 @@ func (bot_app BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQue
 	}
 }
 
-func (bot_app BotApp) handleClear(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleClear(message *tgbotapi.Message) {
 	var text string
 
 	chatID := message.Chat.ID
@@ -295,6 +302,7 @@ func (bot_app BotApp) handleClear(message *tgbotapi.Message) {
 	}
 
 	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = tgbotapi.ModeMarkdown
 	if !isEmpty {
 		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 			[]tgbotapi.InlineKeyboardButton{
@@ -304,7 +312,7 @@ func (bot_app BotApp) handleClear(message *tgbotapi.Message) {
 	bot_app.Bot.Send(msg)
 }
 
-func (bot_app BotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) {
+func (bot_app TelegramBotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) {
 	bot_app.Bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 

@@ -39,10 +39,10 @@ func main() {
 	}
 	log.Printf("Authorised on account %s", tgbot.Self.UserName)
 
-	bot_app := bot.BotApp{
+	botApp := bot.TelegramBotApp{
 		Bot:     tgbot,
-		Storage: storage.DatabaseStorage{}}
-	bot_app.ListenForWebhook()
+		Storage: storage.MemoryStorage{}} // TODO: Use RDBMS for storing data
+	botApp.ListenForWebhook()
 	log.Fatal(
 		http.ListenAndServeTLS(
 			":8443",

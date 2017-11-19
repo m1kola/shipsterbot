@@ -2,7 +2,8 @@ package storage
 
 import "github.com/m1kola/telegram_shipsterbot/models"
 
-type StorageInterface interface {
+// DataStorageInterface represents a struct that handles storage logic
+type DataStorageInterface interface {
 	AddUnfinishedCommand(UserID int, command models.Command)
 	GetUnfinishedCommand(UserID int) (*models.UnfinishedCommand, bool)
 	DeleteUnfinishedCommand(UserID int)
