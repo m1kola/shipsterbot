@@ -41,7 +41,7 @@ func main() {
 
 	botApp := bot.TelegramBotApp{
 		Bot:     tgbot,
-		Storage: storage.MemoryStorage{}} // TODO: Use RDBMS for storing data
+		Storage: storage.NewMemoryStorage()} // TODO: Use RDBMS for storing data
 	botApp.ListenForWebhook()
 	log.Fatal(
 		http.ListenAndServeTLS(
