@@ -1,6 +1,6 @@
 package storage
 
-import "github.com/m1kola/telegram_shipsterbot/models"
+import "github.com/m1kola/shipsterbot/models"
 
 // TODO: Decide if it makes sense to move we move shoppingItemsMap and chatShoppingListsMap to models
 

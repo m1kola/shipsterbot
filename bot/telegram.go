@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/m1kola/telegram_shipsterbot/models"
-	"github.com/m1kola/telegram_shipsterbot/storage"
+	"github.com/m1kola/shipsterbot/models"
+	"github.com/m1kola/shipsterbot/storage"
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
@@ -207,7 +207,6 @@ func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) {
 }
 
 func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) {
-	// TODO: We should, probably cleanup text (remove @UserNameBot, etc)
 	itemName := message.Text
 
 	bot_app.Storage.AddShoppingItemIntoShoppingList(message.Chat.ID, &models.ShoppingItem{

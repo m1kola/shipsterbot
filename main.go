@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/m1kola/telegram_shipsterbot/bot"
-	"github.com/m1kola/telegram_shipsterbot/storage"
+	"github.com/m1kola/shipsterbot/bot"
+	"github.com/m1kola/shipsterbot/storage"
 
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )

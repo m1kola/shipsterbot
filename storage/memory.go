@@ -3,7 +3,7 @@ package storage
 import (
 	"time"
 
-	"github.com/m1kola/telegram_shipsterbot/models"
+	"github.com/m1kola/shipsterbot/models"
 )
 
 // MemoryStorage implements the DataStorageInterface DataStorageInterface

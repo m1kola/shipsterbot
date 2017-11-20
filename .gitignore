@@ -1,5 +1,5 @@
 # Project specific
-telegram_shipsterbot
+shipsterbot
 
 # Binaries for programs and plugins
 *.exe
@@ -18,4 +18,3 @@ telegram_shipsterbot
 
 # Vendor files
 /vendor
-
