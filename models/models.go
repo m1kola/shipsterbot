@@ -15,13 +15,10 @@ const (
 // For example, when a user wasnts to add an item into his shopping list,
 // he needs to send the "add" command and then answer bot's question
 // (send the name of item), so we need to remember what we have asked user for.
-//
-// Note: it will be fun, if an user starts opperation in a private chat
-// and finishes in a group chat. So, probably, we should
-// store unfinished commands per chatID
 type UnfinishedCommand struct {
 	Command   Command
-	CreatedBy int // Telegram User ID
+	ChatID    int64
+	CreatedBy int
 	CreatedAt *time.Time
 }
 
@@ -29,6 +26,7 @@ type UnfinishedCommand struct {
 type ShoppingItem struct {
 	ID        int64
 	Name      string
-	CreatedBy int  // Telegram User ID
+	ChatID    int64
+	CreatedBy int
 	CreatedAt *time.Time
 }

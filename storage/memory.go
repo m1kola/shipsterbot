@@ -6,7 +6,7 @@ import (
 	"github.com/m1kola/shipsterbot/models"
 )
 
-// MemoryStorage implements the DataStorageInterface DataStorageInterface
+// MemoryStorage implements the DataStorageInterface
 // to store data in memory. Useful for prototyping and, potentially,
 // for tests.
 type MemoryStorage struct {
@@ -26,24 +26,25 @@ func NewMemoryStorage() *MemoryStorage {
 }
 
 // AddUnfinishedCommand inserts an unfinished operaiont into the storage
-func (s *MemoryStorage) AddUnfinishedCommand(UserID int, command models.Command) {
+func (s *MemoryStorage) AddUnfinishedCommand(chatID int64, userID int, command models.Command) {
 	now := time.Now()
 
-	s.unfinishedCommands[UserID] = &models.UnfinishedCommand{
+	s.unfinishedCommands[userID] = &models.UnfinishedCommand{
 		Command:   command,
-		CreatedBy: UserID,
+		ChatID:    chatID,
+		CreatedBy: userID,
 		CreatedAt: &now}
 }
 
 // GetUnfinishedCommand returns an unfinished operaiont from the storage
-func (s *MemoryStorage) GetUnfinishedCommand(UserID int) (*models.UnfinishedCommand, bool) {
-	item, ok := s.unfinishedCommands[UserID]
+func (s *MemoryStorage) GetUnfinishedCommand(chatID int64, userID int) (*models.UnfinishedCommand, bool) {
+	item, ok := s.unfinishedCommands[userID]
 	return item, ok
 }
 
 // DeleteUnfinishedCommand deletes an unfinished operaiont from the storage
-func (s *MemoryStorage) DeleteUnfinishedCommand(UserID int) {
-	delete(s.unfinishedCommands, UserID)
+func (s *MemoryStorage) DeleteUnfinishedCommand(chatID int64, userID int) {
+	delete(s.unfinishedCommands, userID)
 }
 
 // AddShoppingItemIntoShoppingList adds a shoping item into a shipping list
@@ -77,7 +78,7 @@ func (s *MemoryStorage) GetShoppingItems(chatID int64) (*shoppingItemsMap, bool)
 }
 
 // GetShoppingItem returns a shopping item by id from a specific chat
-func (s *MemoryStorage) GetShoppingItem(chatID int64, itemID int64) (*models.ShoppingItem, bool) {
+func (s *MemoryStorage) GetShoppingItem(chatID, itemID int64) (*models.ShoppingItem, bool) {
 	shoppingList, ok := s.items[chatID]
 
 	if ok && itemID > 0 && itemID <= s.latestItemID {
@@ -89,7 +90,7 @@ func (s *MemoryStorage) GetShoppingItem(chatID int64, itemID int64) (*models.Sho
 
 // DeleteShoppingItem deletes a shipping item from a shipping lits
 // for a specific chat
-func (s *MemoryStorage) DeleteShoppingItem(chatID int64, itemID int64) {
+func (s *MemoryStorage) DeleteShoppingItem(chatID, itemID int64) {
 	shoppingList, ok := s.items[chatID]
 	if ok {
 		delete(*shoppingList, itemID)

@@ -12,12 +12,12 @@ type chatShoppingListsMap map[int64]*shoppingItemsMap
 
 // DataStorageInterface represents a struct that handles storage logic
 type DataStorageInterface interface {
-	AddUnfinishedCommand(UserID int, command models.Command)
-	GetUnfinishedCommand(UserID int) (*models.UnfinishedCommand, bool)
-	DeleteUnfinishedCommand(UserID int)
+	AddUnfinishedCommand(chatID int64, userID int, command models.Command)
+	GetUnfinishedCommand(chatID int64, userID int) (*models.UnfinishedCommand, bool)
+	DeleteUnfinishedCommand(chatID int64, userID int)
 	AddShoppingItemIntoShoppingList(chatID int64, item *models.ShoppingItem)
 	GetShoppingItems(chatID int64) (*shoppingItemsMap, bool)
-	GetShoppingItem(chatID int64, itemID int64) (*models.ShoppingItem, bool)
-	DeleteShoppingItem(chatID int64, itemID int64)
+	GetShoppingItem(chatID, itemID int64) (*models.ShoppingItem, bool)
+	DeleteShoppingItem(chatID, itemID int64)
 	DeleteAllShoppingItems(chatID int64)
 }

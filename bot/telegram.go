@@ -120,12 +120,14 @@ func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) b
 // or using keyboard, but in some cases we need to handle message text.
 // For example, when user asks us to add an item into the shopping list
 func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) bool {
-	session, ok := bot_app.Storage.GetUnfinishedCommand(message.From.ID)
+	session, ok := bot_app.Storage.GetUnfinishedCommand(message.Chat.ID,
+		message.From.ID)
 
 	if ok {
 		switch session.Command {
 		case models.CommandAddShoppingItem:
-			bot_app.Storage.DeleteUnfinishedCommand(message.From.ID)
+			bot_app.Storage.DeleteUnfinishedCommand(message.Chat.ID,
+				message.From.ID)
 			go bot_app.handleAddSession(message)
 			return true
 		}
@@ -170,7 +172,7 @@ func (bot_app TelegramBotApp) handleUnrecognisedMessage(message *tgbotapi.Messag
 }
 
 func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) {
-	bot_app.Storage.AddUnfinishedCommand(message.From.ID,
+	bot_app.Storage.AddUnfinishedCommand(message.Chat.ID, message.From.ID,
 		models.CommandAddShoppingItem)
 
 	text := "Ok, what do you want to add into your shopping list?"
