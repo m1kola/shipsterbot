@@ -211,7 +211,6 @@ func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) {
 
 	bot_app.Storage.AddShoppingItemIntoShoppingList(message.Chat.ID, &models.ShoppingItem{
 		Name:      itemName,
-		IsActive:  true,
 		CreatedBy: message.From.ID})
 
 	text := "Lovely! I've added \"%s\" into your shopping list. Anything else?"

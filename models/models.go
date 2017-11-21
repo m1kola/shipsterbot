@@ -29,7 +29,6 @@ type UnfinishedCommand struct {
 type ShoppingItem struct {
 	ID        int64
 	Name      string
-	IsActive  bool // Indicates that the item is still active
 	CreatedBy int  // Telegram User ID
 	CreatedAt *time.Time
 }
