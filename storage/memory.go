@@ -6,6 +6,12 @@ import (
 	"github.com/m1kola/shipsterbot/models"
 )
 
+// shoppingItemsMap stores shopping items by their id
+type shoppingItemsMap map[int64]*models.ShoppingItem
+
+// chatShoppingListsMap stores shopping lisets by chat id
+type chatShoppingListsMap map[int64]*shoppingItemsMap
+
 // MemoryStorage implements the DataStorageInterface
 // to store data in memory. Useful for prototyping and, potentially,
 // for tests.
@@ -72,9 +78,18 @@ func (s *MemoryStorage) AddShoppingItemIntoShoppingList(chatID int64, item *mode
 }
 
 // GetShoppingItems returns a shopping list for a specific chat
-func (s *MemoryStorage) GetShoppingItems(chatID int64) (*shoppingItemsMap, bool) {
+func (s *MemoryStorage) GetShoppingItems(chatID int64) ([]*models.ShoppingItem, bool) {
 	shoppingList, ok := s.items[chatID]
-	return shoppingList, ok
+	if !ok {
+		return nil, false
+	}
+
+	itemsList := make([]*models.ShoppingItem, 0, len(*shoppingList))
+	for _, item := range *shoppingList {
+		itemsList = append(itemsList, item)
+	}
+
+	return itemsList, true
 }
 
 // GetShoppingItem returns a shopping item by id from a specific chat

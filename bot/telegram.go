@@ -185,14 +185,14 @@ func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) {
 	chatID := message.Chat.ID
 
 	chatItems, ok := bot_app.Storage.GetShoppingItems(chatID)
-	if !ok || len(*chatItems) == 0 {
+	if !ok || len(chatItems) == 0 {
 		text = "Your shopping list is empty. Who knows, maybe it's a good thing"
 	} else {
-		offset := len(strconv.Itoa(len(*chatItems)))
+		offset := len(strconv.Itoa(len(chatItems)))
 		listItemFormat := fmt.Sprintf("%%%dd. %%s\n", offset)
 
 		listNumber := 1
-		for _, item := range *chatItems {
+		for _, item := range chatItems {
 			text += fmt.Sprintf(listItemFormat, listNumber, item.Name)
 			listNumber++
 		}
@@ -213,6 +213,7 @@ func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) {
 
 	bot_app.Storage.AddShoppingItemIntoShoppingList(message.Chat.ID, &models.ShoppingItem{
 		Name:      itemName,
+		ChatID:    message.Chat.ID,
 		CreatedBy: message.From.ID})
 
 	text := "Lovely! I've added \"%s\" into your shopping list. Anything else?"
@@ -227,12 +228,12 @@ func (bot_app TelegramBotApp) handleDel(message *tgbotapi.Message) {
 
 	chatID := message.Chat.ID
 	chatItems, ok := bot_app.Storage.GetShoppingItems(chatID)
-	isEmpty := !ok || len(*chatItems) == 0
+	isEmpty := !ok || len(chatItems) == 0
 	if isEmpty {
 		text = "Your shopping list is empty. No need to delete items 🙂"
 	} else {
-		for itemID, item := range *chatItems {
-			callbackData := fmt.Sprintf("del:%s", strconv.FormatInt(itemID, 10))
+		for _, item := range chatItems {
+			callbackData := fmt.Sprintf("del:%s", strconv.FormatInt(item.ID, 10))
 			itemButton := tgbotapi.NewInlineKeyboardButtonData(item.Name, callbackData)
 			itemButtons = append(itemButtons, itemButton)
 		}
@@ -295,7 +296,7 @@ func (bot_app TelegramBotApp) handleClear(message *tgbotapi.Message) {
 	chatID := message.Chat.ID
 
 	chatItems, ok := bot_app.Storage.GetShoppingItems(chatID)
-	isEmpty := !ok || len(*chatItems) == 0
+	isEmpty := !ok || len(chatItems) == 0
 	if isEmpty {
 		text = "Your shopping list is empty. No need to delete items 🙂"
 	} else {

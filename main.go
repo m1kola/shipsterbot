@@ -1,14 +1,16 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
 
+	_ "github.com/lib/pq"
+	tgbotapi "gopkg.in/telegram-bot-api.v4"
+
 	"github.com/m1kola/shipsterbot/bot"
 	"github.com/m1kola/shipsterbot/storage"
-
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
 func getDBConnectionString() string {
@@ -31,6 +33,12 @@ func incommingRequstLogger(handler http.Handler) http.Handler {
 }
 
 func main() {
+	// Initialise DB connection pool
+	db, err := sql.Open("postgres", getDBConnectionString())
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Initialise bot instance
 	tgbot, err := tgbotapi.NewBotAPI(getAPIToken())
 	tgbot.Debug = isDebug()
@@ -41,7 +49,7 @@ func main() {
 
 	botApp := bot.TelegramBotApp{
 		Bot:     tgbot,
-		Storage: storage.NewMemoryStorage()} // TODO: Use RDBMS for storing data
+		Storage: storage.NewSQLStorage(db)}
 	botApp.ListenForWebhook()
 	log.Fatal(
 		http.ListenAndServeTLS(
