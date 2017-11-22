@@ -172,8 +172,11 @@ func (bot_app TelegramBotApp) handleUnrecognisedMessage(message *tgbotapi.Messag
 }
 
 func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) {
-	bot_app.Storage.AddUnfinishedCommand(message.Chat.ID, message.From.ID,
-		models.CommandAddShoppingItem)
+	bot_app.Storage.AddUnfinishedCommand(models.UnfinishedCommand{
+		Command:   models.CommandAddShoppingItem,
+		ChatID:    message.Chat.ID,
+		CreatedBy: message.From.ID,
+	})
 
 	text := "Ok, what do you want to add into your shopping list?"
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
@@ -211,7 +214,7 @@ func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) {
 func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) {
 	itemName := message.Text
 
-	bot_app.Storage.AddShoppingItemIntoShoppingList(message.Chat.ID, &models.ShoppingItem{
+	bot_app.Storage.AddShoppingItemIntoShoppingList(models.ShoppingItem{
 		Name:      itemName,
 		ChatID:    message.Chat.ID,
 		CreatedBy: message.From.ID})

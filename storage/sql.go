@@ -20,7 +20,7 @@ func NewSQLStorage(db *sql.DB) *SQLStorage {
 }
 
 // AddUnfinishedCommand inserts an unfinished operaiont into the storage
-func (s *SQLStorage) AddUnfinishedCommand(chatID int64, userID int, command models.Command) {
+func (s *SQLStorage) AddUnfinishedCommand(command models.UnfinishedCommand) {
 	tx, err := s.db.Begin()
 	if err != nil {
 		log.Fatal(err)
@@ -31,7 +31,7 @@ func (s *SQLStorage) AddUnfinishedCommand(chatID int64, userID int, command mode
 		`INSERT INTO
 			unfinished_commands(command, chat_id, created_by)
 		VALUES ($1, $2, $3)`,
-		command, chatID, userID)
+		command.Command, command.ChatID, command.CreatedBy)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func (s *SQLStorage) DeleteUnfinishedCommand(chatID int64, userID int) {
 
 // AddShoppingItemIntoShoppingList adds a shoping item into a shipping list
 // of a specific chat
-func (s *SQLStorage) AddShoppingItemIntoShoppingList(chatID int64, item *models.ShoppingItem) {
+func (s *SQLStorage) AddShoppingItemIntoShoppingList(item models.ShoppingItem) {
 	_, err := s.db.Exec(
 		`INSERT INTO
 			shopping_items (name, chat_id, created_by)

@@ -32,14 +32,14 @@ func NewMemoryStorage() *MemoryStorage {
 }
 
 // AddUnfinishedCommand inserts an unfinished operaiont into the storage
-func (s *MemoryStorage) AddUnfinishedCommand(chatID int64, userID int, command models.Command) {
-	now := time.Now()
+func (s *MemoryStorage) AddUnfinishedCommand(command models.UnfinishedCommand) {
+	// Set CreatedAt if not present
+	if command.CreatedAt == nil {
+		now := time.Now()
+		command.CreatedAt = &now
+	}
 
-	s.unfinishedCommands[userID] = &models.UnfinishedCommand{
-		Command:   command,
-		ChatID:    chatID,
-		CreatedBy: userID,
-		CreatedAt: &now}
+	s.unfinishedCommands[command.CreatedBy] = &command
 }
 
 // GetUnfinishedCommand returns an unfinished operaiont from the storage
@@ -55,7 +55,7 @@ func (s *MemoryStorage) DeleteUnfinishedCommand(chatID int64, userID int) {
 
 // AddShoppingItemIntoShoppingList adds a shoping item into a shipping list
 // of a specific chat
-func (s *MemoryStorage) AddShoppingItemIntoShoppingList(chatID int64, item *models.ShoppingItem) {
+func (s *MemoryStorage) AddShoppingItemIntoShoppingList(item models.ShoppingItem) {
 	// Set an ID
 	s.latestItemID++
 	item.ID = s.latestItemID
@@ -67,14 +67,14 @@ func (s *MemoryStorage) AddShoppingItemIntoShoppingList(chatID int64, item *mode
 	}
 
 	// Create a shopping list, if not present
-	_, ok := s.items[chatID]
+	_, ok := s.items[item.ChatID]
 	if !ok {
 		newshoppingList := make(shoppingItemsMap)
-		s.items[chatID] = &newshoppingList
+		s.items[item.ChatID] = &newshoppingList
 	}
 
-	// Insert and item
-	(*s.items[chatID])[item.ID] = item
+	// Insert an item
+	(*s.items[item.ChatID])[item.ID] = &item
 }
 
 // GetShoppingItems returns a shopping list for a specific chat
@@ -96,11 +96,12 @@ func (s *MemoryStorage) GetShoppingItems(chatID int64) ([]*models.ShoppingItem, 
 func (s *MemoryStorage) GetShoppingItem(chatID, itemID int64) (*models.ShoppingItem, bool) {
 	shoppingList, ok := s.items[chatID]
 
-	if ok && itemID > 0 && itemID <= s.latestItemID {
-		item, ok := (*shoppingList)[itemID]
-		return item, ok
+	if !ok {
+		return nil, false
 	}
-	return nil, false
+
+	item, ok := (*shoppingList)[itemID]
+	return item, ok
 }
 
 // DeleteShoppingItem deletes a shipping item from a shipping lits
