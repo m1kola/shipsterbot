@@ -263,9 +263,9 @@ func (bot_app TelegramBotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.Cal
 	}
 
 	var text string
-	item, ok := bot_app.Storage.GetShoppingItem(chatID, itemID)
+	item, ok := bot_app.Storage.GetShoppingItem(itemID)
 	if ok {
-		bot_app.Storage.DeleteShoppingItem(chatID, itemID)
+		bot_app.Storage.DeleteShoppingItem(itemID)
 
 		text = "It's nice to see that you think that you don't"
 		text += "need this \"%s\" thing. "

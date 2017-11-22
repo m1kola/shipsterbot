@@ -84,14 +84,14 @@ func (s *MemoryStorage) GetShoppingItems(chatID int64) ([]*models.ShoppingItem, 
 }
 
 // GetShoppingItem returns a shopping item by id from a specific chat
-func (s *MemoryStorage) GetShoppingItem(chatID, itemID int64) (*models.ShoppingItem, bool) {
+func (s *MemoryStorage) GetShoppingItem(itemID int64) (*models.ShoppingItem, bool) {
 	item, ok := s.items[itemID]
 	return item, ok
 }
 
 // DeleteShoppingItem deletes a shipping item from a shipping lits
 // for a specific chat
-func (s *MemoryStorage) DeleteShoppingItem(chatID, itemID int64) {
+func (s *MemoryStorage) DeleteShoppingItem(itemID int64) {
 	delete(s.items, itemID)
 }
 
@@ -99,7 +99,7 @@ func (s *MemoryStorage) DeleteShoppingItem(chatID, itemID int64) {
 func (s *MemoryStorage) DeleteAllShoppingItems(chatID int64) {
 	for _, item := range s.items {
 		if item.ChatID == chatID {
-			s.DeleteShoppingItem(chatID, item.ID)
+			s.DeleteShoppingItem(item.ID)
 		}
 	}
 }

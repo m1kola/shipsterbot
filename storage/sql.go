@@ -132,7 +132,7 @@ func (s *SQLStorage) GetShoppingItems(chatID int64) ([]*models.ShoppingItem, boo
 }
 
 // GetShoppingItem returns a shopping item by id from a specific chat
-func (s *SQLStorage) GetShoppingItem(chatID int64, itemID int64) (*models.ShoppingItem, bool) {
+func (s *SQLStorage) GetShoppingItem(itemID int64) (*models.ShoppingItem, bool) {
 	item := models.ShoppingItem{}
 	row := s.db.QueryRow(
 		`SELECT
@@ -154,7 +154,7 @@ func (s *SQLStorage) GetShoppingItem(chatID int64, itemID int64) (*models.Shoppi
 
 // DeleteShoppingItem deletes a shipping item from a shipping lits
 // for a specific chat
-func (s *SQLStorage) DeleteShoppingItem(chatID int64, itemID int64) {
+func (s *SQLStorage) DeleteShoppingItem(itemID int64) {
 	_, err := s.db.Exec(
 		`DELETE FROM
 			shopping_items

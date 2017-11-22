@@ -9,10 +9,8 @@ type DataStorageInterface interface {
 	DeleteUnfinishedCommand(chatID int64, userID int)
 
 	AddShoppingItemIntoShoppingList(item models.ShoppingItem)
-	// TODO: Decide if we can remoe chatID. It doesn't seem useful
-	GetShoppingItem(chatID, itemID int64) (*models.ShoppingItem, bool)
+	GetShoppingItem(itemID int64) (*models.ShoppingItem, bool)
+	DeleteShoppingItem(itemID int64)
 	GetShoppingItems(chatID int64) ([]*models.ShoppingItem, bool)
-	// TODO: Decide if we can remoe chatID. It doesn't seem useful
-	DeleteShoppingItem(chatID, itemID int64)
 	DeleteAllShoppingItems(chatID int64)
 }
