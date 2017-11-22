@@ -9,16 +9,13 @@ import (
 // shoppingItemsMap stores shopping items by their id
 type shoppingItemsMap map[int64]*models.ShoppingItem
 
-// chatShoppingListsMap stores shopping lisets by chat id
-type chatShoppingListsMap map[int64]*shoppingItemsMap
-
 // MemoryStorage implements the DataStorageInterface
 // to store data in memory. Useful for prototyping and, potentially,
 // for tests.
 type MemoryStorage struct {
 	unfinishedCommands map[int]*models.UnfinishedCommand
 	latestItemID       int64
-	items              chatShoppingListsMap
+	items              shoppingItemsMap
 }
 
 // NewMemoryStorage initialises a new MemoryStorage instance
@@ -26,7 +23,7 @@ func NewMemoryStorage() *MemoryStorage {
 	storage := MemoryStorage{}
 
 	storage.unfinishedCommands = make(map[int]*models.UnfinishedCommand)
-	storage.items = make(chatShoppingListsMap)
+	storage.items = make(shoppingItemsMap)
 
 	return &storage
 }
@@ -66,27 +63,21 @@ func (s *MemoryStorage) AddShoppingItemIntoShoppingList(item models.ShoppingItem
 		item.CreatedAt = &now
 	}
 
-	// Create a shopping list, if not present
-	_, ok := s.items[item.ChatID]
-	if !ok {
-		newshoppingList := make(shoppingItemsMap)
-		s.items[item.ChatID] = &newshoppingList
-	}
-
 	// Insert an item
-	(*s.items[item.ChatID])[item.ID] = &item
+	s.items[item.ID] = &item
 }
 
 // GetShoppingItems returns a shopping list for a specific chat
 func (s *MemoryStorage) GetShoppingItems(chatID int64) ([]*models.ShoppingItem, bool) {
-	shoppingList, ok := s.items[chatID]
-	if !ok {
-		return nil, false
+	var itemsList []*models.ShoppingItem
+	for _, item := range s.items {
+		if item.ChatID == chatID {
+			itemsList = append(itemsList, item)
+		}
 	}
 
-	itemsList := make([]*models.ShoppingItem, 0, len(*shoppingList))
-	for _, item := range *shoppingList {
-		itemsList = append(itemsList, item)
+	if len(itemsList) == 0 {
+		return nil, false
 	}
 
 	return itemsList, true
@@ -94,26 +85,21 @@ func (s *MemoryStorage) GetShoppingItems(chatID int64) ([]*models.ShoppingItem, 
 
 // GetShoppingItem returns a shopping item by id from a specific chat
 func (s *MemoryStorage) GetShoppingItem(chatID, itemID int64) (*models.ShoppingItem, bool) {
-	shoppingList, ok := s.items[chatID]
-
-	if !ok {
-		return nil, false
-	}
-
-	item, ok := (*shoppingList)[itemID]
+	item, ok := s.items[itemID]
 	return item, ok
 }
 
 // DeleteShoppingItem deletes a shipping item from a shipping lits
 // for a specific chat
 func (s *MemoryStorage) DeleteShoppingItem(chatID, itemID int64) {
-	shoppingList, ok := s.items[chatID]
-	if ok {
-		delete(*shoppingList, itemID)
-	}
+	delete(s.items, itemID)
 }
 
 // DeleteAllShoppingItems deletes all shopping items for a specific chat
 func (s *MemoryStorage) DeleteAllShoppingItems(chatID int64) {
-	s.items[chatID] = &shoppingItemsMap{}
+	for _, item := range s.items {
+		if item.ChatID == chatID {
+			s.DeleteShoppingItem(chatID, item.ID)
+		}
+	}
 }
