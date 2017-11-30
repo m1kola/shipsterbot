@@ -1,0 +1,36 @@
+version: '3.3'
+
+
+volumes:
+  shipsterbot_postgres_data: {}
+
+
+networks:
+  backend: {}
+
+
+services:
+  # The bot application
+  shipsterbot_app:
+    build: .
+    restart: always
+    networks:
+      - backend
+    env_file:
+      - ~/.docker/secrets/shipsterbot.prod.env
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres/postgres?sslmode=disable
+    links:
+      - shipsterbot_postgres:postgres
+    depends_on:
+      - shipsterbot_postgres
+
+
+  # DB container
+  shipsterbot_postgres:
+    image: postgres:9.6
+    restart: always
+    networks:
+      - backend
+    volumes:
+      - "shipsterbot_postgres_data:/var/lib/postgresql/data"

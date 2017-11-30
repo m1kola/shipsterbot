@@ -33,24 +33,21 @@ var startTelegramBotCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		// Initialise bot instance
+		// Initialise a bot instance
 		tgbot, err := tgbotapi.NewBotAPI(env.GetTelegramAPIToken())
-		tgbot.Debug = env.IsDebug()
 		if err != nil {
 			log.Fatal(err)
 		}
+		tgbot.Debug = env.IsDebug()
 		log.Printf("Authorised on account %s", tgbot.Self.UserName)
 
+		// Create a app bot instance
 		botApp := bot.TelegramBotApp{
 			Bot:     tgbot,
 			Storage: storage.NewSQLStorage(db)}
 		botApp.ListenForWebhook()
-		log.Fatal(
-			http.ListenAndServeTLS(
-				":8443",
-				env.GetTelegramTLSCertPath(),
-				env.GetTelegramTLSKeyPath(),
-				incommingRequstLogger(http.DefaultServeMux)))
+
+		startWebServer()
 	},
 }
 
@@ -59,4 +56,25 @@ func incommingRequstLogger(handler http.Handler) http.Handler {
 		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
 		handler.ServeHTTP(w, r)
 	})
+}
+
+func startWebServer() {
+	var err error
+	handler := incommingRequstLogger(http.DefaultServeMux)
+
+	if env.IsDebug() {
+		log.Println("Listening on port 8443")
+		err = http.ListenAndServeTLS(
+			":8443",
+			env.GetTelegramTLSCertPath(),
+			env.GetTelegramTLSKeyPath(),
+			handler)
+	} else {
+		log.Println("Listening on port 8080")
+		err = http.ListenAndServe(
+			":8080",
+			handler)
+	}
+
+	log.Fatal(err)
 }
