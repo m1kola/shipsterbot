@@ -61,7 +61,24 @@ var migrateUpCmd = &cobra.Command{
 var migrateDownCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Apply down migration",
-	Args:  cobra.ExactArgs(1),
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("accepts 1 arg, received %d", len(args))
+		}
+
+		if args[0] == "zero" {
+			return nil
+		}
+
+		version, err := strconv.Atoi(args[0])
+		if err != nil || version < 1 {
+			return fmt.Errorf(
+				"accepts a positive int or \"zero\" to apply all down migrations, received %s",
+				args[0])
+		}
+
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 
@@ -70,17 +87,16 @@ var migrateDownCmd = &cobra.Command{
 
 		if args[0] == "zero" {
 			// If arg is "zero" - apply all down migrations
+
 			err = m.Down()
 		} else {
 			// Othervise migrate to a specific version
+
 			var version int
-
-			version, err = strconv.Atoi(args[0])
-			if err != nil || version < 1 {
-				log.Fatalln("error:",
-					fmt.Sprintf("Wrong version number \"%s\"", args[0]))
-			}
-
+			// No need to check error here: we've already
+			// validated the argument in our
+			// custom Args validator function
+			version, _ = strconv.Atoi(args[0])
 			err = m.Migrate(uint(version))
 		}
 
