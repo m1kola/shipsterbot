@@ -63,16 +63,28 @@ var migrateDownCmd = &cobra.Command{
 	Short: "Apply down migration",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		var err error
+
 		m, migraterErr := newMigrate()
 		defer migrateCleanup(m, migraterErr)
 
-		version, err := strconv.Atoi(args[0])
-		if err != nil || version < 1 {
-			log.Fatalln("error:",
-				fmt.Sprintf("Wrong version number \"%s\"", args[0]))
+		if args[0] == "zero" {
+			// If arg is "zero" - apply all down migrations
+			err = m.Down()
+		} else {
+			// Othervise migrate to a specific version
+			var version int
+
+			version, err = strconv.Atoi(args[0])
+			if err != nil || version < 1 {
+				log.Fatalln("error:",
+					fmt.Sprintf("Wrong version number \"%s\"", args[0]))
+			}
+
+			err = m.Migrate(uint(version))
 		}
 
-		if err := m.Migrate(uint(version)); err != nil {
+		if err != nil {
 			if err == migrate.ErrNoChange {
 				fmt.Println("Nothing to migrate")
 			} else {
