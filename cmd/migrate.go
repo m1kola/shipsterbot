@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/mattes/migrate"
+	// Init migrate's postgres driver
 	_ "github.com/mattes/migrate/database/postgres"
 	"github.com/mattes/migrate/source/go-bindata"
 
@@ -24,7 +27,7 @@ func init() {
 	// Register subcommands
 	migrateCmd.AddCommand(migrateUpCmd)
 	migrateCmd.AddCommand(migrateDownCmd)
-	migrateCmd.AddCommand(migrateShowCmd)
+	migrateCmd.AddCommand(migrateShowCurrentCmd)
 
 	// Define persistent flags for all commands under the migrateCmd
 	migrateCmd.PersistentFlags().StringVarP(
@@ -38,24 +41,18 @@ var migrateCmd = &cobra.Command{
 	Short: "Manage schema and data migrations",
 }
 
-// TODO: Decide if we need a shortcut to create up&down migration files
-
 var migrateUpCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Apply up migrations",
 	Run: func(cmd *cobra.Command, args []string) {
-		migrater, migraterErr := newMigrate()
-		defer func() {
-			if migraterErr == nil {
-				migrater.Close()
-			}
-		}()
+		m, migraterErr := newMigrate()
+		defer migrateCleanup(m, migraterErr)
 
-		if err := migrater.Up(); err != nil {
-			if err != migrate.ErrNoChange {
-				log.Fatalln("error:", err)
+		if err := m.Up(); err != nil {
+			if err == migrate.ErrNoChange {
+				fmt.Println("Nothing to migrate")
 			} else {
-				log.Println("error:", err)
+				log.Fatalln("error:", err)
 			}
 		}
 	},
@@ -64,16 +61,44 @@ var migrateUpCmd = &cobra.Command{
 var migrateDownCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Apply down migration",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Fatal("Not implemented")
+		m, migraterErr := newMigrate()
+		defer migrateCleanup(m, migraterErr)
+
+		version, err := strconv.Atoi(args[0])
+		if err != nil || version < 1 {
+			log.Fatalln("error:",
+				fmt.Sprintf("Wrong version number \"%s\"", args[0]))
+		}
+
+		if err := m.Migrate(uint(version)); err != nil {
+			if err == migrate.ErrNoChange {
+				fmt.Println("Nothing to migrate")
+			} else {
+				log.Fatalln("error:", err)
+			}
+		}
 	},
 }
 
-var migrateShowCmd = &cobra.Command{
-	Use:   "show",
-	Short: "Show current status of migrations",
+var migrateShowCurrentCmd = &cobra.Command{
+	Use:   "showcurrent",
+	Short: "Shows current migration's number",
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Fatal("Not implemented")
+		m, migraterErr := newMigrate()
+		defer migrateCleanup(m, migraterErr)
+
+		currentVersion, dirty, err := m.Version()
+		if err != nil {
+			log.Fatalln("error:", err)
+		}
+
+		if dirty {
+			fmt.Printf("Current migration: \"%v\" (dirty)\n", currentVersion)
+		} else {
+			fmt.Printf("Current migration: %v\n", currentVersion)
+		}
 	},
 }
 
@@ -112,4 +137,10 @@ func newMigrate() (*migrate.Migrate, error) {
 	}
 
 	return migrater, migraterErr
+}
+
+func migrateCleanup(m *migrate.Migrate, migraterErr error) {
+	if migraterErr == nil {
+		m.Close()
+	}
 }
