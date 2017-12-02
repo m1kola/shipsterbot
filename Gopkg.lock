@@ -14,6 +14,12 @@
   revision = "8c6ee72f3e6bcb1542298dd5f76cb74af9742cec"
 
 [[projects]]
+  name = "github.com/mattes/migrate"
+  packages = [".","database","database/postgres","source","source/go-bindata"]
+  revision = "035c07716cd373d88456ec4d701402df52584cb4"
+  version = "v3.0.1"
+
+[[projects]]
   name = "github.com/spf13/cobra"
   packages = ["."]
   revision = "7b2c5ac9fc04fc5efafb60700713d4fa609b777b"
@@ -40,6 +46,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ba7deeac0efd872508bd3c72b99d213d73eafcffcc5eefc5dadbd38a90e1e813"
+  inputs-digest = "f9282c8268f91c7ad57d5bf679c85fa9b08d2e36b29169591d9d1106fe743b1f"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -1,3 +1,5 @@
+BEGIN;
+
 create table unfinished_commands (
 	id serial primary key,
 	command varchar(32) not null,
@@ -14,3 +16,5 @@ create table shopping_items (
 	created_by int not null,
 	created_at timestamp default current_timestamp not null
 );
+
+COMMIT;
