@@ -15,10 +15,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/m1kola/shipsterbot/env"
 	"github.com/m1kola/shipsterbot/migrations"
 )
-
-var databaseURL string
 
 func init() {
 	// Register command under the root command
@@ -28,12 +27,6 @@ func init() {
 	migrateCmd.AddCommand(migrateUpCmd)
 	migrateCmd.AddCommand(migrateDownCmd)
 	migrateCmd.AddCommand(migrateShowCurrentCmd)
-
-	// Define persistent flags for all commands under the migrateCmd
-	migrateCmd.PersistentFlags().StringVarP(
-		&databaseURL,
-		"database-url", "d", "",
-		"database source name")
 }
 
 var migrateCmd = &cobra.Command{
@@ -145,7 +138,7 @@ func newMigrate() (*migrate.Migrate, error) {
 	// Initialize migrate
 	// Each command must decide  how it wants to handle the migraterErr
 	migrater, migraterErr := migrate.NewWithSourceInstance(
-		"go-bindata", bindataMigrateSource, databaseURL)
+		"go-bindata", bindataMigrateSource, env.GetDBConnectionString())
 
 	if migraterErr == nil {
 		// handle Ctrl+c
