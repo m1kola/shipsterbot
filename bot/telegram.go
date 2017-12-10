@@ -137,7 +137,6 @@ func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) bool 
 		}
 	}
 
-	// TODO: Delete unfinished commands, if we didn't manage to find a handler
 	return false
 }
 

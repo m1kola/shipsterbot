@@ -27,6 +27,19 @@ func (s *SQLStorage) AddUnfinishedCommand(command models.UnfinishedCommand) {
 	}
 	defer tx.Rollback()
 
+	// Delete a previous unfinshed command (if any) in a transaction
+	_, err = tx.Exec(
+		`DELETE FROM
+			unfinished_commands
+		WHERE
+			chat_id = $1
+			AND created_by = $2`,
+		command.ChatID, command.CreatedBy)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Add a new unfinshed command
 	_, err = tx.Exec(
 		`INSERT INTO
 			unfinished_commands(command, chat_id, created_by)

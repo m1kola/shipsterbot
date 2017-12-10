@@ -36,6 +36,10 @@ func (s *MemoryStorage) AddUnfinishedCommand(command models.UnfinishedCommand) {
 		command.CreatedAt = &now
 	}
 
+	// Delete a previous unfinshed command (if any)
+	s.DeleteUnfinishedCommand(command.ChatID, command.CreatedBy)
+
+	// Add a new unfinshed command
 	s.unfinishedCommands[command.CreatedBy] = &command
 }
 
