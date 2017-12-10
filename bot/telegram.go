@@ -21,7 +21,8 @@ type TelegramBotApp struct {
 // ListenForWebhook starts infinite loop that receives
 // updates from Telegram.
 func (bot_app TelegramBotApp) ListenForWebhook() {
-	updates := bot_app.Bot.ListenForWebhook(fmt.Sprintf("/%s/webhook", bot_app.Bot.Token))
+	updates := bot_app.Bot.ListenForWebhook(
+		fmt.Sprintf("/%s/webhook", bot_app.Bot.Token))
 
 	go bot_app.handleUpdates(updates)
 }
@@ -101,9 +102,9 @@ func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) b
 }
 
 // handleMessageText handles unfinshed operations.
-// Normally we listen to user's commands (`MessageEntities` of type `bot_command`)
-// or using keyboard, but in some cases we need to handle message text.
-// For example, when user asks us to add an item into the shopping list
+// Normally we listen to user's text commands or inline keyboard,
+// but in some cases we need to handle message text.
+// For example, when user asks us to add an item into the shopping list.
 func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) bool {
 	session, ok := bot_app.Storage.GetUnfinishedCommand(message.Chat.ID,
 		message.From.ID)
@@ -156,15 +157,40 @@ func (bot_app TelegramBotApp) handleUnrecognisedMessage(message *tgbotapi.Messag
 }
 
 func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) {
-	bot_app.Storage.AddUnfinishedCommand(models.UnfinishedCommand{
-		Command:   models.CommandAddShoppingItem,
-		ChatID:    message.Chat.ID,
-		CreatedBy: message.From.ID,
-	})
+	itemName := message.CommandArguments()
 
-	text := "Ok, what do you want to add into your shopping list?"
-	msg := tgbotapi.NewMessage(message.Chat.ID, text)
-	bot_app.Bot.Send(msg)
+	if itemName == "" && message.Chat.IsPrivate() {
+		// If item is not provided and we are in a private chat,
+		// allow the user to add an item in two steps
+		bot_app.Storage.AddUnfinishedCommand(models.UnfinishedCommand{
+			Command:   models.CommandAddShoppingItem,
+			ChatID:    message.Chat.ID,
+			CreatedBy: message.From.ID,
+		})
+
+		text := "Ok, what do you want to add into your shopping list?"
+		msg := tgbotapi.NewMessage(message.Chat.ID, text)
+		bot_app.Bot.Send(msg)
+	} else {
+		// If we are in a group chat, the user must provide
+		// an item name in the as an argument, because of group security policy
+		// See: https://core.telegram.org/bots/#privacy-mode
+		// TODO: Discover https://core.telegram.org/bots/api#forcereply
+		//       Probably it's possible to improve UX
+		if itemName == "" {
+			// If item name is not supplied, give the user a clue
+			text := "I'm so sorry, but in a group chat you have to"
+			text += "specify an item you want to add using an argument. "
+			text += "Try `/add milk`"
+
+			msg := tgbotapi.NewMessage(message.Chat.ID, text)
+			msg.ParseMode = tgbotapi.ModeMarkdown
+			bot_app.Bot.Send(msg)
+		} else {
+			// If item name is supplied - just add it
+			bot_app.handleAddSession(message)
+		}
+	}
 }
 
 func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) {
@@ -196,7 +222,10 @@ func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) {
 }
 
 func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) {
-	itemName := message.Text
+	itemName := message.CommandArguments()
+	if itemName == "" {
+		itemName = message.Text
+	}
 
 	bot_app.Storage.AddShoppingItemIntoShoppingList(models.ShoppingItem{
 		Name:      itemName,
@@ -251,7 +280,7 @@ func (bot_app TelegramBotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.Cal
 	if ok {
 		bot_app.Storage.DeleteShoppingItem(itemID)
 
-		text = "It's nice to see that you think that you don't"
+		text = "It's nice to see that you think that you don't "
 		text += "need this \"%s\" thing. "
 		text += "I've removed it from your shopping list.\n\n"
 		text += "Can I do anything else for you?"
