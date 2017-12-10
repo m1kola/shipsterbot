@@ -90,6 +90,10 @@ func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) b
 			return false
 		}
 		botCommand := message.Text[commandStartPos:commandEndPos]
+		// Remove everything after the "@" char.
+		// We we receive something like "/list@MySuperBot",
+		// it most likely means that we are in group.
+		botCommand = strings.SplitN(botCommand, "@", 2)[0]
 
 		switch botCommand {
 		case "help", "start":
