@@ -60,14 +60,13 @@ func (bot_app TelegramBotApp) handleCallbackQuery(update *tgbotapi.Update) {
 }
 
 func (bot_app TelegramBotApp) handleMessage(message *tgbotapi.Message) {
-	log.Printf("Message received: %s", message.Text)
+	log.Printf("Message received: \"%s\"", message.Text)
 
 	isHandled := bot_app.handleMessageEntities(message)
 	if !isHandled {
 		isHandled = bot_app.handleMessageText(message)
 
 		if !isHandled {
-			log.Print("No supported bot commands found")
 			go bot_app.handleUnrecognisedMessage(message)
 		}
 	}
@@ -153,7 +152,14 @@ func (bot_app TelegramBotApp) handleStart(message *tgbotapi.Message) {
 }
 
 func (bot_app TelegramBotApp) handleUnrecognisedMessage(message *tgbotapi.Message) {
-	bot_app._handleHelpMessage(message, false)
+	log.Print("No supported bot commands found")
+
+	if len(message.Text) > 0 {
+		// Display help text only if we received
+		// a message text: we don't want to reply
+		// to service messages (people added or removed from the group, etc.)
+		bot_app._handleHelpMessage(message, false)
+	}
 }
 
 func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) {
