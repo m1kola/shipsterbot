@@ -159,39 +159,37 @@ func (bot_app TelegramBotApp) handleUnrecognisedMessage(message *tgbotapi.Messag
 func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) {
 	itemName := message.CommandArguments()
 
-	if itemName == "" && message.Chat.IsPrivate() {
-		// If item is not provided and we are in a private chat,
-		// allow the user to add an item in two steps
-		bot_app.Storage.AddUnfinishedCommand(models.UnfinishedCommand{
-			Command:   models.CommandAddShoppingItem,
-			ChatID:    message.Chat.ID,
-			CreatedBy: message.From.ID,
-		})
+	if itemName != "" {
+		// If item name is supplied - just add it
+		bot_app.handleAddSession(message)
+		return
+	}
 
-		text := "Ok, what do you want to add into your shopping list?"
-		msg := tgbotapi.NewMessage(message.Chat.ID, text)
-		bot_app.Bot.Send(msg)
-	} else {
-		// If we are in a group chat, the user must provide
-		// an item name in the as an argument, because of group security policy
-		// See: https://core.telegram.org/bots/#privacy-mode
-		// TODO: Discover https://core.telegram.org/bots/api#forcereply
-		//       Probably it's possible to improve UX
-		if itemName == "" {
-			// If item name is not supplied, give the user a clue
-			format := "I'm so sorry, but in a group chat you have to"
-			format += "specify an item you want to add using an argument. "
-			format += "Try `/%s milk`"
-			text := fmt.Sprintf(format, message.CommandWithAt())
+	// If an item name is not provided in arguments,
+	// allow the user to add an item following the two-step process
+	bot_app.Storage.AddUnfinishedCommand(models.UnfinishedCommand{
+		Command:   models.CommandAddShoppingItem,
+		ChatID:    message.Chat.ID,
+		CreatedBy: message.From.ID,
+	})
 
-			msg := tgbotapi.NewMessage(message.Chat.ID, text)
-			msg.ParseMode = tgbotapi.ModeMarkdown
-			bot_app.Bot.Send(msg)
-		} else {
-			// If item name is supplied - just add it
-			bot_app.handleAddSession(message)
+	format := "Ok [%s](tg://user?id=%d), what do you want to add into your shopping list?"
+	text := fmt.Sprintf(format, message.From.FirstName, message.From.ID)
+
+	msg := tgbotapi.NewMessage(message.Chat.ID, text)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+
+	// If we are not in a private chat,
+	// force user to reply because we can't listen all messages in a group.
+	// See: https://core.telegram.org/bots/#privacy-mode
+	if !message.Chat.IsPrivate() {
+		msg.ReplyMarkup = tgbotapi.ForceReply{
+			ForceReply: true,
+			Selective:  true,
 		}
 	}
+
+	bot_app.Bot.Send(msg)
 }
 
 func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) {
