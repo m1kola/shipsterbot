@@ -179,9 +179,10 @@ func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) {
 		//       Probably it's possible to improve UX
 		if itemName == "" {
 			// If item name is not supplied, give the user a clue
-			text := "I'm so sorry, but in a group chat you have to"
-			text += "specify an item you want to add using an argument. "
-			text += "Try `/add milk`"
+			format := "I'm so sorry, but in a group chat you have to"
+			format += "specify an item you want to add using an argument. "
+			format += "Try `/%s milk`"
+			text := fmt.Sprintf(format, message.CommandWithAt())
 
 			msg := tgbotapi.NewMessage(message.Chat.ID, text)
 			msg.ParseMode = tgbotapi.ModeMarkdown
