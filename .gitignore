@@ -1,5 +1,6 @@
 # Project specific
-shipsterbot
+/shipsterbot
+/debug
 
 # Binaries for programs and plugins
 *.exe
