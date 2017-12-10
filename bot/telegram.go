@@ -78,42 +78,23 @@ func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) b
 		return false
 	}
 
-	for _, entity := range *message.Entities {
-		if entity.Type != "bot_command" {
-			continue
-		}
-
-		// Get command name without the leading slash
-		commandStartPos := entity.Offset + 1
-		commandEndPos := entity.Offset + entity.Length
-		if commandStartPos < 0 || commandEndPos > len(message.Text) {
-			return false
-		}
-		botCommand := message.Text[commandStartPos:commandEndPos]
-		// Remove everything after the "@" char.
-		// We we receive something like "/list@MySuperBot",
-		// it most likely means that we are in group.
-		botCommand = strings.SplitN(botCommand, "@", 2)[0]
-
-		switch botCommand {
-		case "help", "start":
-			go bot_app.handleStart(message)
-			return true
-		case "add":
-			go bot_app.handleAdd(message)
-			return true
-		case "list":
-			go bot_app.handleList(message)
-			return true
-		case "del":
-			go bot_app.handleDel(message)
-			return true
-		case "clear":
-			go bot_app.handleClear(message)
-			return true
-		default:
-			continue
-		}
+	botCommand := message.Command()
+	switch botCommand {
+	case "help", "start":
+		go bot_app.handleStart(message)
+		return true
+	case "add":
+		go bot_app.handleAdd(message)
+		return true
+	case "list":
+		go bot_app.handleList(message)
+		return true
+	case "del":
+		go bot_app.handleDel(message)
+		return true
+	case "clear":
+		go bot_app.handleClear(message)
+		return true
 	}
 
 	return false
