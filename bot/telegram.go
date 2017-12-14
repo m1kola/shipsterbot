@@ -245,7 +245,7 @@ func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) {
 
 func (bot_app TelegramBotApp) handleDel(message *tgbotapi.Message) {
 	var text string
-	var itemButtons []tgbotapi.InlineKeyboardButton
+	var itemButtonRows [][]tgbotapi.InlineKeyboardButton
 
 	chatID := message.Chat.ID
 	chatItems, ok := bot_app.Storage.GetShoppingItems(chatID)
@@ -255,8 +255,9 @@ func (bot_app TelegramBotApp) handleDel(message *tgbotapi.Message) {
 	} else {
 		for _, item := range chatItems {
 			callbackData := fmt.Sprintf("del:%s", strconv.FormatInt(item.ID, 10))
-			itemButton := tgbotapi.NewInlineKeyboardButtonData(item.Name, callbackData)
-			itemButtons = append(itemButtons, itemButton)
+			itemButtonRow := tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(item.Name, callbackData))
+			itemButtonRows = append(itemButtonRows, itemButtonRow)
 		}
 
 		text = "Ok, what item do you want to delete from your shopping list?"
@@ -264,7 +265,8 @@ func (bot_app TelegramBotApp) handleDel(message *tgbotapi.Message) {
 
 	msg := tgbotapi.NewMessage(chatID, text)
 	if !isEmpty {
-		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(itemButtons)
+		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+			itemButtonRows...)
 	}
 	bot_app.Bot.Send(msg)
 }
