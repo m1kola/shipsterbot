@@ -58,7 +58,7 @@ vendor: Gopkg.lock Gopkg.toml | $(GOPATH)/bin/dep
 
 # Generate bindata for migrations
 .PHONY: migrations
-migrations: vendor $(BIN)/go-bindata
+migrations: | $(BIN)/go-bindata
 	cd $(BASE) && \
 	cd ./migrations && $(GOBINDATA) -pkg migrations .
 
