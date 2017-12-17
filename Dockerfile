@@ -1,26 +1,28 @@
 # Build step
 FROM golang:1.9 as build
 
-RUN mkdir -p /go/src/github.com/m1kola/shipsterbot
-WORKDIR /go/src/github.com/m1kola/shipsterbot
+WORKDIR /builddir
+
 
 # Install dependencies
-RUN curl -fsSL -o /usr/local/bin/dep https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64 && chmod +x /usr/local/bin/dep
-COPY Gopkg.lock Gopkg.toml ./
-RUN dep ensure -vendor-only
+# This allows us to use Docker cache in most of the cases,
+# so build happens faster
+COPY Gopkg.lock Gopkg.toml Makefile ./
+RUN make vendor
 
 # Copy source files and compile
 COPY . .
-RUN go build -o app
+RUN make build
+
 
 # Image build
 FROM golang:1.9
 WORKDIR /app/bin/
 
 # Copy a binary from the build step
-COPY --from=build /go/src/github.com/m1kola/shipsterbot/app .
+COPY --from=build /builddir/shipsterbot .
 
 # Define a command to run in a container
-CMD ./app migrate up && ./app startbot telegram
+CMD ./shipsterbot migrate up && ./shipsterbot startbot telegram
 
 EXPOSE 8080
