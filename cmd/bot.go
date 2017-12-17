@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -62,18 +63,15 @@ func startWebServer() {
 	var err error
 	handler := incommingRequstLogger(http.DefaultServeMux)
 
-	if env.IsDebug() {
-		log.Println("Listening on port 8443")
-		err = http.ListenAndServeTLS(
-			":8443",
-			env.GetTelegramTLSCertPath(),
-			env.GetTelegramTLSKeyPath(),
-			handler)
+	TLSCertPath := env.GetTelegramTLSCertPath()
+	TLSKeyPath := env.GetTelegramTLSKeyPath()
+	addr := fmt.Sprintf(":%s", env.GetTelegramWebhookPort())
+
+	log.Printf("Listening on %s", addr)
+	if len(TLSCertPath) > 0 && len(TLSKeyPath) > 0 {
+		err = http.ListenAndServeTLS(addr, TLSCertPath, TLSKeyPath, handler)
 	} else {
-		log.Println("Listening on port 8080")
-		err = http.ListenAndServe(
-			":8080",
-			handler)
+		err = http.ListenAndServe(addr, handler)
 	}
 
 	log.Fatal(err)

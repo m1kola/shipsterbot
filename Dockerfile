@@ -25,4 +25,4 @@ COPY --from=build /builddir/shipsterbot .
 # Define a command to run in a container
 CMD ./shipsterbot migrate up && ./shipsterbot startbot telegram
 
-EXPOSE 8080
+EXPOSE 8443
