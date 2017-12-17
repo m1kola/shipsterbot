@@ -25,5 +25,7 @@ func GetTelegramWebhookPort() string {
 	if !ok {
 		return "8443"
 	}
+
+	// TODO: Allow only `443`, `80`, `88`, `8443`
 	return value
 }
