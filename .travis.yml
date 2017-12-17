@@ -1,0 +1,16 @@
+language: go
+go:
+  - 1.9
+
+# Use container-based infrastructure
+dist: trusty
+sudo: false
+
+
+# Install project dependencies
+install:
+  - make vendor
+
+# Run tests
+script:
+  - make test
