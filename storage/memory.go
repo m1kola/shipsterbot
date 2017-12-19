@@ -13,6 +13,7 @@ type shoppingItemsMap map[int64]*models.ShoppingItem
 // to store data in memory. Useful for prototyping and, potentially,
 // for tests.
 type MemoryStorage struct {
+	DataStorageInterface
 	unfinishedCommands map[int]*models.UnfinishedCommand
 	latestItemID       int64
 	items              shoppingItemsMap

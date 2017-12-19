@@ -10,6 +10,7 @@ import (
 // SQLStorage implements the DataStorageInterface
 // to store data persistently in an SQL RDBMS
 type SQLStorage struct {
+	DataStorageInterface
 	db *sql.DB
 }
 

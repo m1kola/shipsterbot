@@ -14,6 +14,7 @@ import (
 // TelegramBotApp is a struct for handeling iteractions
 // with the Telegram API
 type TelegramBotApp struct {
+	AppInterface
 	Bot     *tgbotapi.BotAPI
 	Storage storage.DataStorageInterface
 }
