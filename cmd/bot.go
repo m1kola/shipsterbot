@@ -63,9 +63,13 @@ func startWebServer() {
 	var err error
 	handler := incommingRequstLogger(http.DefaultServeMux)
 
+	port, err := env.GetTelegramWebhookPort()
+	if err != nil {
+		log.Fatal(err)
+	}
 	TLSCertPath := env.GetTelegramTLSCertPath()
 	TLSKeyPath := env.GetTelegramTLSKeyPath()
-	addr := fmt.Sprintf(":%s", env.GetTelegramWebhookPort())
+	addr := fmt.Sprintf(":%s", port)
 
 	log.Printf("Listening on %s", addr)
 	if len(TLSCertPath) > 0 && len(TLSKeyPath) > 0 {
