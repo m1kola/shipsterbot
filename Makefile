@@ -53,7 +53,7 @@ $(BIN)/go-bindata: | $(BIN)
 .PHONY: vendor
 vendor: Gopkg.lock Gopkg.toml | $(GOPATH)/bin/dep
 	cd $(BASE) && \
-	${GODEP} ensure -vendor-only
+	$(GODEP) ensure -vendor-only
 
 
 # Generate bindata for migrations
@@ -67,7 +67,7 @@ migrations: | $(BIN)/go-bindata
 .PHONY: build
 build: vendor
 	cd $(BASE) && \
-	go build -o ${OUTPUT_BIN}
+	go build -o $(OUTPUT_BIN)
 
 
 # Run tests for all pages
@@ -80,5 +80,5 @@ test: vendor
 # Cleanup working directory
 .PHONY: clean
 clean:
-	rm -rf $(BASE)/${OUTPUT_BIN}
-	rm -rf ${GOPATH}
+	rm -rf $(BASE)/$(OUTPUT_BIN)
+	rm -rf $(GOPATH)
