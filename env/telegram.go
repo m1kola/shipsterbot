@@ -1,7 +1,6 @@
 package env
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -38,8 +37,8 @@ func GetTelegramWebhookPort() (string, error) {
 		}
 	}
 
-	errMessage := fmt.Sprintf(
+	err := fmt.Errorf(
 		"Wrong port. You can only use one of the follwoing ports: %s",
 		strings.Join(allowedPorts, ", "))
-	return "", errors.New(errMessage)
+	return "", err
 }
