@@ -106,20 +106,32 @@ func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) b
 // but in some cases we need to handle message text.
 // For example, when user asks us to add an item into the shopping list.
 func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) bool {
-	session, ok := bot_app.Storage.GetUnfinishedCommand(message.Chat.ID,
+	session, err := bot_app.Storage.GetUnfinishedCommand(message.Chat.ID,
 		message.From.ID)
 
-	if ok {
-		switch session.Command {
-		case models.CommandAddShoppingItem:
-			bot_app.Storage.DeleteUnfinishedCommand(message.Chat.ID,
-				message.From.ID)
-			go bot_app.handleAddSession(message)
-			return true
-		}
+	if err != nil {
+		log.Printf(
+			"Unable to get an unfinished comamnd (ChatID=%d and UserId=%d): %q",
+			message.Chat.ID, message.From.ID, err)
+		return false
 	}
 
-	return false
+	switch session.Command {
+	case models.CommandAddShoppingItem:
+		err := bot_app.Storage.DeleteUnfinishedCommand(message.Chat.ID,
+			message.From.ID)
+
+		if err != nil {
+			log.Printf(
+				"Unable to delete an unfinished comamnd (ChatID=%d and UserId=%d): %q",
+				message.Chat.ID, message.From.ID, err)
+		}
+
+		go bot_app.handleAddSession(message)
+		return true
+	default:
+		return false
+	}
 }
 
 func (bot_app TelegramBotApp) _handleHelpMessage(message *tgbotapi.Message, isStart bool) {
@@ -174,11 +186,21 @@ func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) {
 
 	// If an item name is not provided in arguments,
 	// allow the user to add an item following the two-step process
-	bot_app.Storage.AddUnfinishedCommand(models.UnfinishedCommand{
-		Command:   models.CommandAddShoppingItem,
+	command := models.CommandAddShoppingItem
+	err := bot_app.Storage.AddUnfinishedCommand(models.UnfinishedCommand{
+		Command:   command,
 		ChatID:    message.Chat.ID,
 		CreatedBy: message.From.ID,
 	})
+
+	if err != nil {
+		log.Printf(
+			"Unable to create an unfinished comamnd (%q): %q",
+			command, err)
+
+		// TODO: send "Something went wrong" to an user
+		return
+	}
 
 	format := "Ok [%s](tg://user?id=%d), what do you want to add into your shopping list?"
 	text := fmt.Sprintf(format, message.From.FirstName, message.From.ID)
@@ -203,8 +225,19 @@ func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) {
 	var text string
 	chatID := message.Chat.ID
 
-	chatItems, ok := bot_app.Storage.GetShoppingItems(chatID)
-	if !ok || len(chatItems) == 0 {
+	chatItems, err := bot_app.Storage.GetShoppingItems(chatID)
+	if err != nil {
+		if err != nil {
+			log.Printf(
+				"Unable to get all shopping items (ChatID=%d): %q",
+				chatID, err)
+
+			// TODO: send "Something went wrong" to an user
+			return
+		}
+	}
+
+	if len(chatItems) == 0 {
 		text = "Your shopping list is empty. Who knows, maybe it's a good thing"
 	} else {
 		offset := len(strconv.Itoa(len(chatItems)))
@@ -233,10 +266,17 @@ func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) {
 		itemName = message.Text
 	}
 
-	bot_app.Storage.AddShoppingItemIntoShoppingList(models.ShoppingItem{
+	err := bot_app.Storage.AddShoppingItemIntoShoppingList(models.ShoppingItem{
 		Name:      itemName,
 		ChatID:    message.Chat.ID,
 		CreatedBy: message.From.ID})
+	if err != nil {
+		log.Printf("Unable to add a new shopping item (ItemName=%s, ChatID=%d, UserId=%d): %q",
+			itemName, message.Chat.ID, message.From.ID, err)
+
+		// TODO: send "Something went wrong" to an user
+		return
+	}
 
 	text := "Lovely! I've added \"%s\" into your shopping list. Anything else?"
 	text = fmt.Sprintf(text, itemName)
@@ -249,8 +289,17 @@ func (bot_app TelegramBotApp) handleDel(message *tgbotapi.Message) {
 	var itemButtonRows [][]tgbotapi.InlineKeyboardButton
 
 	chatID := message.Chat.ID
-	chatItems, ok := bot_app.Storage.GetShoppingItems(chatID)
-	isEmpty := !ok || len(chatItems) == 0
+	chatItems, err := bot_app.Storage.GetShoppingItems(chatID)
+	if err != nil {
+		log.Printf(
+			"Unable to get all shopping items (ChatID=%d): %q",
+			chatID, err)
+
+		// TODO: send "Something went wrong" to an user
+		return
+	}
+
+	isEmpty := len(chatItems) == 0
 	if isEmpty {
 		text = "Your shopping list is empty. No need to delete items 🙂"
 	} else {
@@ -284,9 +333,24 @@ func (bot_app TelegramBotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.Cal
 	}
 
 	var text string
-	item, ok := bot_app.Storage.GetShoppingItem(itemID)
-	if ok {
-		bot_app.Storage.DeleteShoppingItem(itemID)
+	item, err := bot_app.Storage.GetShoppingItem(itemID)
+	if err != nil {
+		log.Printf("Unable to get a shopping item (ItemID=%d): %q",
+			itemID, err)
+
+		// TODO: send "Something went wrong" to an user
+		return
+	}
+
+	if item != nil {
+		err := bot_app.Storage.DeleteShoppingItem(itemID)
+		if err != nil {
+			log.Printf("Unable to delete a shopping item (ItemID=%d): %q",
+				itemID, err)
+
+			// TODO: send "Something went wrong" to an user
+			return
+		}
 
 		text = "It's nice to see that you think that you don't "
 		text += "need this \"%s\" thing. "
@@ -319,8 +383,17 @@ func (bot_app TelegramBotApp) handleClear(message *tgbotapi.Message) {
 
 	chatID := message.Chat.ID
 
-	chatItems, ok := bot_app.Storage.GetShoppingItems(chatID)
-	isEmpty := !ok || len(chatItems) == 0
+	chatItems, err := bot_app.Storage.GetShoppingItems(chatID)
+	if err != nil {
+		log.Printf(
+			"Unable to get all shopping items (ChatID=%d): %q",
+			chatID, err)
+
+		// TODO: send "Something went wrong" to an user
+		return
+	}
+
+	isEmpty := len(chatItems) == 0
 	if isEmpty {
 		text = "Your shopping list is empty. No need to delete items 🙂"
 	} else {
@@ -353,7 +426,15 @@ func (bot_app TelegramBotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.C
 	if confirmed {
 		text = "Ok, I've deleted all items from you shopping list.\n\nNow you can start from scratch, if you wish."
 
-		bot_app.Storage.DeleteAllShoppingItems(chatID)
+		err := bot_app.Storage.DeleteAllShoppingItems(chatID)
+		if err != nil {
+			log.Printf(
+				"Unable to delete all shopping items (ChatID=%d): %q",
+				chatID, err)
+
+			// TODO: send "Something went wrong" to an user
+			return
+		}
 	} else {
 		text = "Canceling. Your items are still in your list."
 	}

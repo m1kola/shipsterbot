@@ -71,6 +71,7 @@ func (s *SQLStorage) GetUnfinishedCommand(chatID int64, userID int) (*models.Unf
 		&command.CreatedBy,
 		&command.CreatedAt)
 
+	// TODO: Return nil, nil if an entry doesn't exist
 	return &command, err
 }
 
@@ -152,6 +153,7 @@ func (s *SQLStorage) GetShoppingItem(itemID int64) (*models.ShoppingItem, error)
 		&item.CreatedBy,
 		&item.CreatedAt)
 
+	// TODO: Return nil, nil if an entry doesn't exist
 	return &item, err
 }
 
