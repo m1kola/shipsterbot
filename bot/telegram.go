@@ -31,11 +31,11 @@ func (bot_app TelegramBotApp) ListenForWebhook() {
 func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 	for update := range updates {
 		if update.CallbackQuery != nil {
-			bot_app.handleCallbackQuery(&update)
+			go bot_app.handleCallbackQuery(&update)
 		}
 
 		if update.Message != nil {
-			bot_app.handleMessage(update.Message)
+			go bot_app.handleMessage(update.Message)
 		}
 	}
 }
@@ -54,9 +54,9 @@ func (bot_app TelegramBotApp) handleCallbackQuery(update *tgbotapi.Update) {
 
 	switch botCommand {
 	case "del":
-		go bot_app.handleDelCallbackQuery(update.CallbackQuery, dataPieces[1])
+		bot_app.handleDelCallbackQuery(update.CallbackQuery, dataPieces[1])
 	case "clear":
-		go bot_app.handleClearCallbackQuery(update.CallbackQuery, dataPieces[1])
+		bot_app.handleClearCallbackQuery(update.CallbackQuery, dataPieces[1])
 	}
 }
 
@@ -68,7 +68,7 @@ func (bot_app TelegramBotApp) handleMessage(message *tgbotapi.Message) {
 		isHandled = bot_app.handleMessageText(message)
 
 		if !isHandled {
-			go bot_app.handleUnrecognisedMessage(message)
+			bot_app.handleUnrecognisedMessage(message)
 		}
 	}
 }
@@ -82,19 +82,19 @@ func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) b
 	botCommand := message.Command()
 	switch botCommand {
 	case "help", "start":
-		go bot_app.handleStart(message)
+		bot_app.handleStart(message)
 		return true
 	case "add":
-		go bot_app.handleAdd(message)
+		bot_app.handleAdd(message)
 		return true
 	case "list":
-		go bot_app.handleList(message)
+		bot_app.handleList(message)
 		return true
 	case "del":
-		go bot_app.handleDel(message)
+		bot_app.handleDel(message)
 		return true
 	case "clear":
-		go bot_app.handleClear(message)
+		bot_app.handleClear(message)
 		return true
 	}
 
@@ -127,7 +127,7 @@ func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) bool 
 				message.Chat.ID, message.From.ID, err)
 		}
 
-		go bot_app.handleAddSession(message)
+		bot_app.handleAddSession(message)
 		return true
 	default:
 		return false
