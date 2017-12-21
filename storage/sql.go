@@ -2,7 +2,6 @@ package storage
 
 import (
 	"database/sql"
-	"log"
 
 	"github.com/m1kola/shipsterbot/models"
 )
@@ -21,10 +20,10 @@ func NewSQLStorage(db *sql.DB) *SQLStorage {
 }
 
 // AddUnfinishedCommand inserts an unfinished operaiont into the storage
-func (s *SQLStorage) AddUnfinishedCommand(command models.UnfinishedCommand) {
+func (s *SQLStorage) AddUnfinishedCommand(command models.UnfinishedCommand) error {
 	tx, err := s.db.Begin()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer tx.Rollback()
 
@@ -37,7 +36,7 @@ func (s *SQLStorage) AddUnfinishedCommand(command models.UnfinishedCommand) {
 			AND created_by = $2`,
 		command.ChatID, command.CreatedBy)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// Add a new unfinshed command
@@ -47,17 +46,15 @@ func (s *SQLStorage) AddUnfinishedCommand(command models.UnfinishedCommand) {
 		VALUES ($1, $2, $3)`,
 		command.Command, command.ChatID, command.CreatedBy)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	err = tx.Commit()
-	if err != nil {
-		log.Fatal(err)
-	}
+	return err
 }
 
 // GetUnfinishedCommand returns an unfinished operaiont from the storage
-func (s *SQLStorage) GetUnfinishedCommand(chatID int64, userID int) (*models.UnfinishedCommand, bool) {
+func (s *SQLStorage) GetUnfinishedCommand(chatID int64, userID int) (*models.UnfinishedCommand, error) {
 	command := models.UnfinishedCommand{}
 	row := s.db.QueryRow(
 		`SELECT
@@ -74,11 +71,11 @@ func (s *SQLStorage) GetUnfinishedCommand(chatID int64, userID int) (*models.Unf
 		&command.CreatedBy,
 		&command.CreatedAt)
 
-	return &command, err == nil
+	return &command, err
 }
 
 // DeleteUnfinishedCommand deletes an unfinished operaiont from the storage
-func (s *SQLStorage) DeleteUnfinishedCommand(chatID int64, userID int) {
+func (s *SQLStorage) DeleteUnfinishedCommand(chatID int64, userID int) error {
 	_, err := s.db.Exec(
 		`DELETE FROM
 			unfinished_commands
@@ -87,27 +84,23 @@ func (s *SQLStorage) DeleteUnfinishedCommand(chatID int64, userID int) {
 			AND created_by = $2`,
 		chatID, userID)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	return err
 }
 
 // AddShoppingItemIntoShoppingList adds a shoping item into a shipping list
 // of a specific chat
-func (s *SQLStorage) AddShoppingItemIntoShoppingList(item models.ShoppingItem) {
+func (s *SQLStorage) AddShoppingItemIntoShoppingList(item models.ShoppingItem) error {
 	_, err := s.db.Exec(
 		`INSERT INTO
 			shopping_items (name, chat_id, created_by)
 		VALUES ($1, $2, $3)`,
 		item.Name, item.ChatID, item.CreatedBy)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	return err
 }
 
 // GetShoppingItems returns a shopping list for a specific chat
-func (s *SQLStorage) GetShoppingItems(chatID int64) ([]*models.ShoppingItem, bool) {
+func (s *SQLStorage) GetShoppingItems(chatID int64) ([]*models.ShoppingItem, error) {
 	var itemsList []*models.ShoppingItem
 
 	rows, err := s.db.Query(
@@ -119,7 +112,7 @@ func (s *SQLStorage) GetShoppingItems(chatID int64) ([]*models.ShoppingItem, boo
 		chatID)
 
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	defer rows.Close()
@@ -130,7 +123,7 @@ func (s *SQLStorage) GetShoppingItems(chatID int64) ([]*models.ShoppingItem, boo
 			&item.CreatedBy, &item.CreatedAt)
 
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
 		itemsList = append(itemsList, &item)
@@ -138,15 +131,11 @@ func (s *SQLStorage) GetShoppingItems(chatID int64) ([]*models.ShoppingItem, boo
 	}
 
 	err = rows.Err()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return itemsList, true
+	return itemsList, err
 }
 
 // GetShoppingItem returns a shopping item by id from a specific chat
-func (s *SQLStorage) GetShoppingItem(itemID int64) (*models.ShoppingItem, bool) {
+func (s *SQLStorage) GetShoppingItem(itemID int64) (*models.ShoppingItem, error) {
 	item := models.ShoppingItem{}
 	row := s.db.QueryRow(
 		`SELECT
@@ -163,12 +152,12 @@ func (s *SQLStorage) GetShoppingItem(itemID int64) (*models.ShoppingItem, bool) 
 		&item.CreatedBy,
 		&item.CreatedAt)
 
-	return &item, err == nil
+	return &item, err
 }
 
 // DeleteShoppingItem deletes a shipping item from a shipping lits
 // for a specific chat
-func (s *SQLStorage) DeleteShoppingItem(itemID int64) {
+func (s *SQLStorage) DeleteShoppingItem(itemID int64) error {
 	_, err := s.db.Exec(
 		`DELETE FROM
 			shopping_items
@@ -176,13 +165,11 @@ func (s *SQLStorage) DeleteShoppingItem(itemID int64) {
 			id = $1`,
 		itemID)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	return err
 }
 
 // DeleteAllShoppingItems deletes all shopping items for a specific chat
-func (s *SQLStorage) DeleteAllShoppingItems(chatID int64) {
+func (s *SQLStorage) DeleteAllShoppingItems(chatID int64) error {
 	_, err := s.db.Exec(
 		`DELETE FROM
 			shopping_items
@@ -190,7 +177,5 @@ func (s *SQLStorage) DeleteAllShoppingItems(chatID int64) {
 			chat_id = $1`,
 		chatID)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	return err
 }

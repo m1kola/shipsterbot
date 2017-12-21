@@ -4,13 +4,13 @@ import "github.com/m1kola/shipsterbot/models"
 
 // DataStorageInterface represents a struct that handles storage logic
 type DataStorageInterface interface {
-	AddUnfinishedCommand(command models.UnfinishedCommand)
-	GetUnfinishedCommand(chatID int64, userID int) (*models.UnfinishedCommand, bool)
-	DeleteUnfinishedCommand(chatID int64, userID int)
+	AddUnfinishedCommand(command models.UnfinishedCommand) error
+	GetUnfinishedCommand(chatID int64, userID int) (*models.UnfinishedCommand, error)
+	DeleteUnfinishedCommand(chatID int64, userID int) error
 
-	AddShoppingItemIntoShoppingList(item models.ShoppingItem)
-	GetShoppingItem(itemID int64) (*models.ShoppingItem, bool)
-	DeleteShoppingItem(itemID int64)
-	GetShoppingItems(chatID int64) ([]*models.ShoppingItem, bool)
-	DeleteAllShoppingItems(chatID int64)
+	AddShoppingItemIntoShoppingList(item models.ShoppingItem) error
+	GetShoppingItem(itemID int64) (*models.ShoppingItem, error)
+	DeleteShoppingItem(itemID int64) error
+	GetShoppingItems(chatID int64) ([]*models.ShoppingItem, error)
+	DeleteAllShoppingItems(chatID int64) error
 }
