@@ -42,7 +42,9 @@ func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 			}
 
 			if err != nil {
-				// TODO: Send a "Something went wrong" message
+				text := "Sorry, but something went wrong. I'll inform developers about this issue. Please, try again a bit later."
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+				bot_app.Bot.Send(msg)
 			}
 		}(update)
 	}
