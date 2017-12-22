@@ -20,6 +20,8 @@ type TelegramBotApp struct {
 	Storage storage.DataStorageInterface
 }
 
+var errCommandIsNotSupported = errors.New("Unable to find a handler for a command")
+
 // ListenForWebhook starts a goroutine with an infinite loop
 // to receives updates from Telegram.
 func (bot_app TelegramBotApp) ListenForWebhook() {
@@ -83,9 +85,11 @@ func (bot_app TelegramBotApp) handleMessage(message *tgbotapi.Message) error {
 
 	var err error
 	err = bot_app.handleMessageEntities(message)
-	if err != nil {
+	// We should stop trying to handle a message in case we've received a
+	// message with a command that we don't support.
+	if err != nil && err != errCommandIsNotSupported {
 		// If we are unable to handle message entities
-		// we need to try to handle message text
+		// we need to try to handle message text.
 		err = bot_app.handleMessageText(message)
 	}
 
@@ -120,12 +124,7 @@ func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) e
 		return bot_app.handleClear(message)
 	}
 
-	// TODO: Return a specific error type
-	// We should stop trying to handle a message in case we've received a
-	// command but it doesn't make sense to us. That's why we need a specific
-	// erorr type here.
-	return fmt.Errorf("Unable to find a handler for the command: %s",
-		botCommand)
+	return errCommandIsNotSupported
 }
 
 // handleMessageText handles text from a message.
