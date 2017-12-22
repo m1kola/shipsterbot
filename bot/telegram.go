@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -11,7 +12,7 @@ import (
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
-// TelegramBotApp is a struct for handeling iteractions
+// TelegramBotApp is a struct for handeling interactions
 // with the Telegram API
 type TelegramBotApp struct {
 	AppInterface
@@ -19,8 +20,8 @@ type TelegramBotApp struct {
 	Storage storage.DataStorageInterface
 }
 
-// ListenForWebhook starts infinite loop that receives
-// updates from Telegram.
+// ListenForWebhook starts a goroutine with an infinite loop
+// to receives updates from Telegram.
 func (bot_app TelegramBotApp) ListenForWebhook() {
 	updates := bot_app.Bot.ListenForWebhook(
 		fmt.Sprintf("/%s/webhook", bot_app.Bot.Token))
@@ -28,92 +29,116 @@ func (bot_app TelegramBotApp) ListenForWebhook() {
 	go bot_app.handleUpdates(updates)
 }
 
+// handleUpdates receives updates and starts goroutines to handle them
 func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 	for update := range updates {
-		if update.CallbackQuery != nil {
-			go bot_app.handleCallbackQuery(&update)
-		}
+		go func(update tgbotapi.Update) {
+			var err error
 
-		if update.Message != nil {
-			go bot_app.handleMessage(update.Message)
-		}
+			if update.CallbackQuery != nil {
+				err = bot_app.handleCallbackQuery(&update)
+			} else if update.Message != nil {
+				err = bot_app.handleMessage(update.Message)
+			}
+
+			if err != nil {
+				// TODO: Send a "Something went wrong" message
+			}
+		}(update)
 	}
 }
 
-func (bot_app TelegramBotApp) handleCallbackQuery(update *tgbotapi.Update) {
-	if update.CallbackQuery.Message == nil {
-		return
+// handleCallbackQuery handles user's interactions with the client's UI
+// User can interaction with a bot using an inline keyboard, for example
+func (bot_app TelegramBotApp) handleCallbackQuery(update *tgbotapi.Update) error {
+	if update.CallbackQuery.Data == "" {
+		return errors.New("Empty data in the CallbackQuery")
 	}
 
 	dataPieces := strings.SplitN(update.CallbackQuery.Data, ":", 2)
 	if len(dataPieces) != 2 {
-		return
+		return fmt.Errorf("Wrong data format in the CallbackQuery: %v",
+			update.CallbackQuery.Data)
 	}
 
 	botCommand := dataPieces[0]
-
 	switch botCommand {
 	case "del":
-		bot_app.handleDelCallbackQuery(update.CallbackQuery, dataPieces[1])
+		return bot_app.handleDelCallbackQuery(update.CallbackQuery, dataPieces[1])
 	case "clear":
-		bot_app.handleClearCallbackQuery(update.CallbackQuery, dataPieces[1])
+		return bot_app.handleClearCallbackQuery(update.CallbackQuery, dataPieces[1])
 	}
+
+	return fmt.Errorf("Unable to find a handler for CallbackQuery: %v",
+		update.CallbackQuery.Data)
 }
 
-func (bot_app TelegramBotApp) handleMessage(message *tgbotapi.Message) {
+// handleMessage handles messages.
+// Messages can contain entities in some cases (commands, mentions, etc),
+// but can also be plain text messages.
+func (bot_app TelegramBotApp) handleMessage(message *tgbotapi.Message) error {
 	log.Printf("Message received: \"%s\"", message.Text)
 
-	isHandled := bot_app.handleMessageEntities(message)
-	if !isHandled {
-		isHandled = bot_app.handleMessageText(message)
-
-		if !isHandled {
-			bot_app.handleUnrecognisedMessage(message)
-		}
+	var err error
+	err = bot_app.handleMessageEntities(message)
+	if err != nil {
+		// If we are unable to handle message entities
+		// we need to try to handle message text
+		err = bot_app.handleMessageText(message)
 	}
+
+	if err != nil {
+		// It's ok if we can't handle the message:
+		// we shouldn't return an error in this case,
+		// because probably our user just sends us nonsense.
+		// Let's send a message saying that we don't understand the input.
+		bot_app.handleUnrecognisedMessage(message)
+	}
+
+	return nil
 }
 
-// handleMessageEntities returns true if the message is handled
-func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) bool {
+// handleMessageEntities handles entities form a message
+func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) error {
 	if message.Entities == nil {
-		return false
+		return errors.New("Message doesn't have entities to handle")
 	}
 
 	botCommand := message.Command()
 	switch botCommand {
 	case "help", "start":
-		bot_app.handleStart(message)
-		return true
+		return bot_app.handleStart(message)
 	case "add":
-		bot_app.handleAdd(message)
-		return true
+		return bot_app.handleAdd(message)
 	case "list":
-		bot_app.handleList(message)
-		return true
+		return bot_app.handleList(message)
 	case "del":
-		bot_app.handleDel(message)
-		return true
+		return bot_app.handleDel(message)
 	case "clear":
-		bot_app.handleClear(message)
-		return true
+		return bot_app.handleClear(message)
 	}
 
-	return false
+	// TODO: Return a specific error message
+	// We should stop trying to handle a message in case we've received a
+	// command but it doesn't make sense to us. That's why we need a specific
+	// erorr type here.
+	return fmt.Errorf("Unable to find a handler for the command: %s",
+		botCommand)
 }
 
-// handleMessageText handles unfinshed operations.
+// handleMessageText handles text from a message.
 // Normally we listen to user's text commands or inline keyboard,
 // but in some cases we need to handle message text.
 // For example, when user asks us to add an item into the shopping list.
-func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) bool {
+func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) error {
 	session, err := bot_app.Storage.GetUnfinishedCommand(message.Chat.ID,
 		message.From.ID)
 
 	if err != nil {
 		log.Printf(
-			"Unable to get an unfinished comamnd (ChatID=%d and UserId=%d): %q",
+			"Unable to get an unfinished comamnd (ChatID=%d and UserId=%d): %v",
 			message.Chat.ID, message.From.ID, err)
-		return false
+		return err
 	}
 
 	switch session.Command {
@@ -123,15 +148,14 @@ func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) bool 
 
 		if err != nil {
 			log.Printf(
-				"Unable to delete an unfinished comamnd (ChatID=%d and UserId=%d): %q",
+				"Unable to delete an unfinished comamnd (ChatID=%d and UserId=%d): %v",
 				message.Chat.ID, message.From.ID, err)
 		}
 
-		bot_app.handleAddSession(message)
-		return true
-	default:
-		return false
+		return bot_app.handleAddSession(message)
 	}
+
+	return errors.New("Unable to find a handler for the message")
 }
 
 func (bot_app TelegramBotApp) _handleHelpMessage(message *tgbotapi.Message, isStart bool) {
@@ -160,14 +184,15 @@ You can control me by sending these commands:
 	bot_app.Bot.Send(msg)
 }
 
-func (bot_app TelegramBotApp) handleStart(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleStart(message *tgbotapi.Message) error {
 	bot_app._handleHelpMessage(message, true)
+	return nil
 }
 
 func (bot_app TelegramBotApp) handleUnrecognisedMessage(message *tgbotapi.Message) {
-	log.Print("No supported bot commands found")
-
 	if len(message.Text) > 0 {
+		log.Print("No supported bot commands found")
+
 		// Display help text only if we received
 		// a message text: we don't want to reply
 		// to service messages (people added or removed from the group, etc.)
@@ -175,13 +200,13 @@ func (bot_app TelegramBotApp) handleUnrecognisedMessage(message *tgbotapi.Messag
 	}
 }
 
-func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) error {
 	itemName := message.CommandArguments()
 
 	if itemName != "" {
 		// If item name is supplied - just add it
 		bot_app.handleAddSession(message)
-		return
+		return nil
 	}
 
 	// If an item name is not provided in arguments,
@@ -195,11 +220,9 @@ func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) {
 
 	if err != nil {
 		log.Printf(
-			"Unable to create an unfinished comamnd (%q): %q",
+			"Unable to create an unfinished comamnd (%v): %v",
 			command, err)
-
-		// TODO: send "Something went wrong" to an user
-		return
+		return err
 	}
 
 	format := "Ok [%s](tg://user?id=%d), what do you want to add into your shopping list?"
@@ -219,9 +242,11 @@ func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) {
 	}
 
 	bot_app.Bot.Send(msg)
+
+	return nil
 }
 
-func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) error {
 	var text string
 	chatID := message.Chat.ID
 
@@ -229,11 +254,9 @@ func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) {
 	if err != nil {
 		if err != nil {
 			log.Printf(
-				"Unable to get all shopping items (ChatID=%d): %q",
+				"Unable to get all shopping items (ChatID=%d): %v",
 				chatID, err)
-
-			// TODO: send "Something went wrong" to an user
-			return
+			return err
 		}
 	}
 
@@ -258,9 +281,11 @@ func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) {
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	bot_app.Bot.Send(msg)
+
+	return nil
 }
 
-func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) error {
 	itemName := message.CommandArguments()
 	if itemName == "" {
 		itemName = message.Text
@@ -271,20 +296,19 @@ func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) {
 		ChatID:    message.Chat.ID,
 		CreatedBy: message.From.ID})
 	if err != nil {
-		log.Printf("Unable to add a new shopping item (ItemName=%s, ChatID=%d, UserId=%d): %q",
+		log.Printf("Unable to add a new shopping item (ItemName=%s, ChatID=%d, UserId=%d): %v",
 			itemName, message.Chat.ID, message.From.ID, err)
-
-		// TODO: send "Something went wrong" to an user
-		return
+		return err
 	}
 
 	text := "Lovely! I've added \"%s\" into your shopping list. Anything else?"
 	text = fmt.Sprintf(text, itemName)
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	bot_app.Bot.Send(msg)
+	return nil
 }
 
-func (bot_app TelegramBotApp) handleDel(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleDel(message *tgbotapi.Message) error {
 	var text string
 	var itemButtonRows [][]tgbotapi.InlineKeyboardButton
 
@@ -292,11 +316,9 @@ func (bot_app TelegramBotApp) handleDel(message *tgbotapi.Message) {
 	chatItems, err := bot_app.Storage.GetShoppingItems(chatID)
 	if err != nil {
 		log.Printf(
-			"Unable to get all shopping items (ChatID=%d): %q",
+			"Unable to get all shopping items (ChatID=%d): %v",
 			chatID, err)
-
-		// TODO: send "Something went wrong" to an user
-		return
+		return err
 	}
 
 	isEmpty := len(chatItems) == 0
@@ -319,9 +341,11 @@ func (bot_app TelegramBotApp) handleDel(message *tgbotapi.Message) {
 			itemButtonRows...)
 	}
 	bot_app.Bot.Send(msg)
+
+	return nil
 }
 
-func (bot_app TelegramBotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) {
+func (bot_app TelegramBotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
 	bot_app.Bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
@@ -329,27 +353,25 @@ func (bot_app TelegramBotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.Cal
 	messageID := callbackQuery.Message.MessageID
 	itemID, err := strconv.ParseInt(data, 10, 64)
 	if err != nil {
-		return
+		return fmt.Errorf(
+			"Unable to parse ItemID from the CallbackQuery data %s: %v",
+			data, err)
 	}
 
 	var text string
 	item, err := bot_app.Storage.GetShoppingItem(itemID)
 	if err != nil {
-		log.Printf("Unable to get a shopping item (ItemID=%d): %q",
+		log.Printf("Unable to get a shopping item (ItemID=%d): %v",
 			itemID, err)
-
-		// TODO: send "Something went wrong" to an user
-		return
+		return err
 	}
 
 	if item != nil {
 		err := bot_app.Storage.DeleteShoppingItem(itemID)
 		if err != nil {
-			log.Printf("Unable to delete a shopping item (ItemID=%d): %q",
+			log.Printf("Unable to delete a shopping item (ItemID=%d): %v",
 				itemID, err)
-
-			// TODO: send "Something went wrong" to an user
-			return
+			return err
 		}
 
 		text = "It's nice to see that you think that you don't "
@@ -376,9 +398,11 @@ func (bot_app TelegramBotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.Cal
 		msg := tgbotapi.NewMessage(chatID, text)
 		bot_app.Bot.Send(msg)
 	}
+
+	return nil
 }
 
-func (bot_app TelegramBotApp) handleClear(message *tgbotapi.Message) {
+func (bot_app TelegramBotApp) handleClear(message *tgbotapi.Message) error {
 	var text string
 
 	chatID := message.Chat.ID
@@ -386,11 +410,9 @@ func (bot_app TelegramBotApp) handleClear(message *tgbotapi.Message) {
 	chatItems, err := bot_app.Storage.GetShoppingItems(chatID)
 	if err != nil {
 		log.Printf(
-			"Unable to get all shopping items (ChatID=%d): %q",
+			"Unable to get all shopping items (ChatID=%d): %v",
 			chatID, err)
-
-		// TODO: send "Something went wrong" to an user
-		return
+		return err
 	}
 
 	isEmpty := len(chatItems) == 0
@@ -409,9 +431,10 @@ func (bot_app TelegramBotApp) handleClear(message *tgbotapi.Message) {
 				tgbotapi.NewInlineKeyboardButtonData("Cancel", "clear:0")})
 	}
 	bot_app.Bot.Send(msg)
+	return nil
 }
 
-func (bot_app TelegramBotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) {
+func (bot_app TelegramBotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
 	bot_app.Bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
@@ -419,7 +442,9 @@ func (bot_app TelegramBotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.C
 	messageID := callbackQuery.Message.MessageID
 	confirmed, err := strconv.ParseBool(data)
 	if err != nil {
-		return
+		return fmt.Errorf(
+			"Unable to parse confirmation from the CallbackQuery data %s: %v",
+			data, err)
 	}
 
 	var text string
@@ -429,11 +454,9 @@ func (bot_app TelegramBotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.C
 		err := bot_app.Storage.DeleteAllShoppingItems(chatID)
 		if err != nil {
 			log.Printf(
-				"Unable to delete all shopping items (ChatID=%d): %q",
+				"Unable to delete all shopping items (ChatID=%d): %v",
 				chatID, err)
-
-			// TODO: send "Something went wrong" to an user
-			return
+			return err
 		}
 	} else {
 		text = "Canceling. Your items are still in your list."
@@ -454,4 +477,6 @@ func (bot_app TelegramBotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.C
 		msg := tgbotapi.NewMessage(chatID, text)
 		bot_app.Bot.Send(msg)
 	}
+
+	return nil
 }
