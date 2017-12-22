@@ -141,6 +141,11 @@ func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) error
 		return err
 	}
 
+	if session == nil {
+		// Unfinished command doesn't exist. It's ok
+		return nil
+	}
+
 	switch session.Command {
 	case models.CommandAddShoppingItem:
 		err := bot_app.Storage.DeleteUnfinishedCommand(message.Chat.ID,
