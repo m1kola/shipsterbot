@@ -44,6 +44,8 @@ func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 			}
 
 			if err != nil {
+				log.Print(err)
+
 				text := "Sorry, but something went wrong. I'll inform developers about this issue. Please, try again a bit later."
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
 				bot_app.Bot.Send(msg)
@@ -136,10 +138,9 @@ func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) error
 		message.From.ID)
 
 	if err != nil {
-		log.Printf(
+		return fmt.Errorf(
 			"Unable to get an unfinished comamnd (ChatID=%d and UserId=%d): %v",
 			message.Chat.ID, message.From.ID, err)
-		return err
 	}
 
 	if session == nil {
@@ -157,7 +158,7 @@ func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) error
 			message.From.ID)
 
 		if err != nil {
-			log.Printf(
+			return fmt.Errorf(
 				"Unable to delete an unfinished comamnd (ChatID=%d and UserId=%d): %v",
 				message.Chat.ID, message.From.ID, err)
 		}
@@ -229,10 +230,9 @@ func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) error {
 	})
 
 	if err != nil {
-		log.Printf(
+		return fmt.Errorf(
 			"Unable to create an unfinished comamnd (%v): %v",
 			command, err)
-		return err
 	}
 
 	format := "Ok [%s](tg://user?id=%d), what do you want to add into your shopping list?"
@@ -262,10 +262,9 @@ func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) error {
 
 	chatItems, err := bot_app.Storage.GetShoppingItems(chatID)
 	if err != nil {
-		log.Printf(
+		return fmt.Errorf(
 			"Unable to get all shopping items (ChatID=%d): %v",
 			chatID, err)
-		return err
 	}
 
 	if len(chatItems) == 0 {
@@ -304,9 +303,9 @@ func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) error 
 		ChatID:    message.Chat.ID,
 		CreatedBy: message.From.ID})
 	if err != nil {
-		log.Printf("Unable to add a new shopping item (ItemName=%s, ChatID=%d, UserId=%d): %v",
+		return fmt.Errorf(
+			"Unable to add a new shopping item (ItemName=%s, ChatID=%d, UserId=%d): %v",
 			itemName, message.Chat.ID, message.From.ID, err)
-		return err
 	}
 
 	text := "Lovely! I've added \"%s\" into your shopping list. Anything else?"
@@ -323,10 +322,9 @@ func (bot_app TelegramBotApp) handleDel(message *tgbotapi.Message) error {
 	chatID := message.Chat.ID
 	chatItems, err := bot_app.Storage.GetShoppingItems(chatID)
 	if err != nil {
-		log.Printf(
+		return fmt.Errorf(
 			"Unable to get all shopping items (ChatID=%d): %v",
 			chatID, err)
-		return err
 	}
 
 	isEmpty := len(chatItems) == 0
@@ -369,17 +367,17 @@ func (bot_app TelegramBotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.Cal
 	var text string
 	item, err := bot_app.Storage.GetShoppingItem(itemID)
 	if err != nil {
-		log.Printf("Unable to get a shopping item (ItemID=%d): %v",
+		return fmt.Errorf(
+			"Unable to get a shopping item (ItemID=%d): %v",
 			itemID, err)
-		return err
 	}
 
 	if item != nil {
 		err := bot_app.Storage.DeleteShoppingItem(itemID)
 		if err != nil {
-			log.Printf("Unable to delete a shopping item (ItemID=%d): %v",
+			return fmt.Errorf(
+				"Unable to delete a shopping item (ItemID=%d): %v",
 				itemID, err)
-			return err
 		}
 
 		text = "It's nice to see that you think that you don't "
@@ -417,10 +415,9 @@ func (bot_app TelegramBotApp) handleClear(message *tgbotapi.Message) error {
 
 	chatItems, err := bot_app.Storage.GetShoppingItems(chatID)
 	if err != nil {
-		log.Printf(
+		return fmt.Errorf(
 			"Unable to get all shopping items (ChatID=%d): %v",
 			chatID, err)
-		return err
 	}
 
 	isEmpty := len(chatItems) == 0
@@ -461,10 +458,9 @@ func (bot_app TelegramBotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.C
 
 		err := bot_app.Storage.DeleteAllShoppingItems(chatID)
 		if err != nil {
-			log.Printf(
+			return fmt.Errorf(
 				"Unable to delete all shopping items (ChatID=%d): %v",
 				chatID, err)
-			return err
 		}
 	} else {
 		text = "Canceling. Your items are still in your list."
