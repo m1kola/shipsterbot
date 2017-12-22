@@ -120,7 +120,7 @@ func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) e
 		return bot_app.handleClear(message)
 	}
 
-	// TODO: Return a specific error message
+	// TODO: Return a specific error type
 	// We should stop trying to handle a message in case we've received a
 	// command but it doesn't make sense to us. That's why we need a specific
 	// erorr type here.
@@ -144,8 +144,12 @@ func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) error
 	}
 
 	if session == nil {
-		// Unfinished command doesn't exist. It's ok
-		return nil
+		// Unfinished command doesn't exist. It's ok,
+		// but we need to return an error just to indicate that
+		// we didn't manage to hande this message
+		return fmt.Errorf(
+			"Cand find unfinished commands for (ChatID=%d and UserId=%d)",
+			message.Chat.ID, message.From.ID)
 	}
 
 	switch session.Command {
