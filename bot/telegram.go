@@ -263,12 +263,10 @@ func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) error {
 
 	chatItems, err := bot_app.Storage.GetShoppingItems(chatID)
 	if err != nil {
-		if err != nil {
-			log.Printf(
-				"Unable to get all shopping items (ChatID=%d): %v",
-				chatID, err)
-			return err
-		}
+		log.Printf(
+			"Unable to get all shopping items (ChatID=%d): %v",
+			chatID, err)
+		return err
 	}
 
 	if len(chatItems) == 0 {
