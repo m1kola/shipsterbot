@@ -6,8 +6,8 @@ OUTPUT_BIN  := shipsterbot
 # but we do not check OS and arch here for simplicity
 # Also no need in compilation for different target archs,
 # at the moment: so we compile just for the current OS and arch
-TARGET_OS   := $(shell uname -s|tr A-Z a-z)
-TARGET_ARCH := amd64
+GOOS   := $(shell uname -s|tr A-Z a-z)
+GOARCH := amd64
 
 
 # Current directory based on the Makefile location withut a trailing slash
@@ -36,7 +36,7 @@ $(BIN): | $(BASE)
 
 # Download a specific version of dep
 GODEP_VERSION   := 0.3.2
-GODEP_URL       := https://github.com/golang/dep/releases/download/v$(GODEP_VERSION)/dep-$(TARGET_OS)-$(TARGET_ARCH)
+GODEP_URL       := https://github.com/golang/dep/releases/download/v$(GODEP_VERSION)/dep-$(GOOS)-$(GOARCH)
 GODEP           := $(BIN)/dep
 $(GOPATH)/bin/dep: | $(BIN)
 	curl -fsSL -o $@ $(GODEP_URL) && \
