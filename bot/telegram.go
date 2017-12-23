@@ -41,7 +41,7 @@ func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 			if update.CallbackQuery != nil {
 				message = update.CallbackQuery.Message
 
-				err = bot_app.handleCallbackQuery(&update)
+				err = bot_app.handleCallbackQuery(update.CallbackQuery)
 			} else if update.Message != nil {
 				message = update.Message
 
@@ -71,30 +71,30 @@ func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 
 // handleCallbackQuery handles user's interactions with the client's UI
 // User can interaction with a bot using an inline keyboard, for example
-func (bot_app TelegramBotApp) handleCallbackQuery(update *tgbotapi.Update) error {
-	if update.CallbackQuery.Data == "" {
+func (bot_app TelegramBotApp) handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) error {
+	if callbackQuery.Data == "" {
 		return handlerCanNotHandleError{
 			errors.New("Empty data in the CallbackQuery")}
 	}
 
-	dataPieces := strings.SplitN(update.CallbackQuery.Data, ":", 2)
+	dataPieces := strings.SplitN(callbackQuery.Data, ":", 2)
 	if len(dataPieces) != 2 {
 		return handlerCanNotHandleError{
 			fmt.Errorf("Wrong data format in the CallbackQuery: %v",
-				update.CallbackQuery.Data)}
+				callbackQuery.Data)}
 	}
 
 	botCommand := dataPieces[0]
 	switch botCommand {
 	case "del":
-		return bot_app.handleDelCallbackQuery(update.CallbackQuery, dataPieces[1])
+		return bot_app.handleDelCallbackQuery(callbackQuery, dataPieces[1])
 	case "clear":
-		return bot_app.handleClearCallbackQuery(update.CallbackQuery, dataPieces[1])
+		return bot_app.handleClearCallbackQuery(callbackQuery, dataPieces[1])
 	}
 
 	return handlerCanNotHandleError{
 		fmt.Errorf("Unable to find a handler for CallbackQuery: %v",
-			update.CallbackQuery.Data)}
+			callbackQuery.Data)}
 }
 
 // handleMessage handles messages.
