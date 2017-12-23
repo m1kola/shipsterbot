@@ -19,15 +19,8 @@ type TelegramBotApp struct {
 	Storage storage.DataStorageInterface
 }
 
-// telegramBotAppUserInputError represents errors that were caused because of
-// unexpected input from a user
-type telegramBotAppUserInputError struct {
-	error
-}
-
-func (e telegramBotAppUserInputError) Error() string {
-	return e.error.Error()
-}
+var errCommandIsNotSupported = handlerCanNotHandleError{
+	errors.New("Unable to find a handler for a command")}
 
 // ListenForWebhook starts a goroutine with an infinite loop
 // to receives updates from Telegram.
@@ -53,7 +46,7 @@ func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 			if err != nil {
 				log.Print(err)
 
-				if _, ok := err.(telegramBotAppUserInputError); ok {
+				if _, ok := err.(handlerCanNotHandleError); ok {
 					// It's ok if we can't handle a message,
 					// because an user can send nonsense.
 					// Let's send a message saying that
@@ -75,13 +68,15 @@ func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 // User can interaction with a bot using an inline keyboard, for example
 func (bot_app TelegramBotApp) handleCallbackQuery(update *tgbotapi.Update) error {
 	if update.CallbackQuery.Data == "" {
-		return errors.New("Empty data in the CallbackQuery")
+		return handlerCanNotHandleError{
+			errors.New("Empty data in the CallbackQuery")}
 	}
 
 	dataPieces := strings.SplitN(update.CallbackQuery.Data, ":", 2)
 	if len(dataPieces) != 2 {
-		return fmt.Errorf("Wrong data format in the CallbackQuery: %v",
-			update.CallbackQuery.Data)
+		return handlerCanNotHandleError{
+			fmt.Errorf("Wrong data format in the CallbackQuery: %v",
+				update.CallbackQuery.Data)}
 	}
 
 	botCommand := dataPieces[0]
@@ -92,8 +87,9 @@ func (bot_app TelegramBotApp) handleCallbackQuery(update *tgbotapi.Update) error
 		return bot_app.handleClearCallbackQuery(update.CallbackQuery, dataPieces[1])
 	}
 
-	return fmt.Errorf("Unable to find a handler for CallbackQuery: %v",
-		update.CallbackQuery.Data)
+	return handlerCanNotHandleError{
+		fmt.Errorf("Unable to find a handler for CallbackQuery: %v",
+			update.CallbackQuery.Data)}
 }
 
 // handleMessage handles messages.
@@ -102,26 +98,27 @@ func (bot_app TelegramBotApp) handleCallbackQuery(update *tgbotapi.Update) error
 func (bot_app TelegramBotApp) handleMessage(message *tgbotapi.Message) error {
 	log.Printf("Message received: \"%s\"", message.Text)
 
-	var err error
-	err = bot_app.handleMessageEntities(message)
-	// If we are unable to handle message entities
-	// we need to try to handle message text.
-	// But we should stop trying to handle a message
-	// in case when we receive nonsense from a user
-	// Error of type telegramBotAppUserInputError means
-	// we should skip further processing
-	if _, ok := err.(telegramBotAppUserInputError); !ok && err != nil {
-		err = bot_app.handleMessageText(message)
+	err := bot_app.handleMessageEntities(message)
+	// We should only try to continue processing an message,
+	// if we receive an handlerCanNotHandleError error.
+	if _, ok := err.(handlerCanNotHandleError); ok {
+		// But it doesn't make sense to continue if it's
+		// an errCommandIsNotSupported error
+		if err == errCommandIsNotSupported {
+			return err
+		}
+
+		return bot_app.handleMessageText(message)
 	}
 
-	// Bypass err to the caller function
 	return err
 }
 
 // handleMessageEntities handles entities form a message
 func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) error {
 	if message.Entities == nil {
-		return errors.New("Message doesn't have entities to handle")
+		return handlerCanNotHandleError{
+			errors.New("Message doesn't have entities to handle")}
 	}
 
 	botCommand := message.Command()
@@ -138,8 +135,7 @@ func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) e
 		return bot_app.handleClear(message)
 	}
 
-	return telegramBotAppUserInputError{
-		errors.New("Unable to find a handler for a command")}
+	return errCommandIsNotSupported
 }
 
 // handleMessageText handles text from a message.
@@ -160,9 +156,9 @@ func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) error
 		// Unfinished command doesn't exist. It's ok,
 		// but we need to return an error just to indicate that
 		// we didn't manage to handele this message
-		return telegramBotAppUserInputError{
+		return handlerCanNotHandleError{
 			fmt.Errorf(
-				"Cand find unfinished commands (ChatID=%d and UserId=%d)",
+				"Can't find unfinished commands (ChatID=%d and UserId=%d)",
 				message.Chat.ID, message.From.ID)}
 	}
 
@@ -180,7 +176,7 @@ func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) error
 		return bot_app.handleAddSession(message)
 	}
 
-	return telegramBotAppUserInputError{
+	return handlerCanNotHandleError{
 		errors.New("Unable to find a handler for the message")}
 }
 
@@ -374,6 +370,7 @@ func (bot_app TelegramBotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.Cal
 	messageID := callbackQuery.Message.MessageID
 	itemID, err := strconv.ParseInt(data, 10, 64)
 	if err != nil {
+		// User can't amend CallBackData, so most likely it's our fault
 		return fmt.Errorf(
 			"Unable to parse ItemID from the CallbackQuery data %s: %v",
 			data, err)
@@ -430,6 +427,7 @@ func (bot_app TelegramBotApp) handleClear(message *tgbotapi.Message) error {
 
 	chatItems, err := bot_app.Storage.GetShoppingItems(chatID)
 	if err != nil {
+		// User can't amend CallBackData, so most likely it's our fault
 		return fmt.Errorf(
 			"Unable to get all shopping items (ChatID=%d): %v",
 			chatID, err)
