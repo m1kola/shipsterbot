@@ -36,11 +36,16 @@ func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 	for update := range updates {
 		go func(update tgbotapi.Update) {
 			var err error
+			var message *tgbotapi.Message
 
 			if update.CallbackQuery != nil {
+				message = update.CallbackQuery.Message
+
 				err = bot_app.handleCallbackQuery(&update)
 			} else if update.Message != nil {
-				err = bot_app.handleMessage(update.Message)
+				message = update.Message
+
+				err = bot_app.handleMessage(message)
 			}
 
 			if err != nil {
@@ -51,12 +56,12 @@ func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 					// because an user can send nonsense.
 					// Let's send a message saying that
 					// we don't understand the input.
-					bot_app.handleUnrecognisedMessage(update.Message)
+					bot_app.handleUnrecognisedMessage(message)
 				} else {
 					// Other types of error mean that we are in trouble
 					// and we need to do something with it
 					text := "Sorry, but something went wrong. I'll inform developers about this issue. Please, try again a bit later."
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+					msg := tgbotapi.NewMessage(message.Chat.ID, text)
 					bot_app.Bot.Send(msg)
 				}
 			}
