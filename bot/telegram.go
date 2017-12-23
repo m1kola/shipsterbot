@@ -15,12 +15,11 @@ import (
 // TelegramBotApp is a struct for handeling interactions
 // with the Telegram API
 type TelegramBotApp struct {
-	AppInterface
 	Bot     *tgbotapi.BotAPI
 	Storage storage.DataStorageInterface
 }
 
-// telegramBotAppUserInputError represents erros that were caused because of
+// telegramBotAppUserInputError represents errors that were caused because of
 // unexpected input from a user
 type telegramBotAppUserInputError struct {
 	error
@@ -107,7 +106,7 @@ func (bot_app TelegramBotApp) handleMessage(message *tgbotapi.Message) error {
 	err = bot_app.handleMessageEntities(message)
 	// If we are unable to handle message entities
 	// we need to try to handle message text.
-	// But should stop trying to handle a message
+	// But we should stop trying to handle a message
 	// in case when we receive nonsense from a user
 	// Error of type telegramBotAppUserInputError means
 	// we should skip further processing
