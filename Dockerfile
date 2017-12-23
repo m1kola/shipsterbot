@@ -12,12 +12,17 @@ RUN make vendor
 
 # Copy source files and compile
 COPY . .
-RUN make build
+
+# Note that we need to disable CGO
+# to be able to run a binary in Alpine linux
+RUN CGO_ENABLED=0 make build
 
 
 # Image build
-FROM golang:1.9-alpine3.7
+FROM alpine:3.7
 WORKDIR /app/bin/
+
+RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
 
 # Copy a binary from the build step
 COPY --from=build /builddir/shipsterbot .
