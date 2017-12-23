@@ -227,8 +227,7 @@ func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) error {
 
 	if itemName != "" {
 		// If item name is supplied - just add it
-		bot_app.handleAddSession(message)
-		return nil
+		return bot_app.handleAddSession(message)
 	}
 
 	// If an item name is not provided in arguments,
