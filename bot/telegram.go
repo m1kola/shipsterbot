@@ -20,7 +20,15 @@ type TelegramBotApp struct {
 	Storage storage.DataStorageInterface
 }
 
-var errCommandIsNotSupported = errors.New("Unable to find a handler for a command")
+// telegramBotAppUserInputError represents erros that were caused because of
+// unexpected input from a user
+type telegramBotAppUserInputError struct {
+	error
+}
+
+func (e telegramBotAppUserInputError) Error() string {
+	return e.error.Error()
+}
 
 // ListenForWebhook starts a goroutine with an infinite loop
 // to receives updates from Telegram.
@@ -46,9 +54,19 @@ func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 			if err != nil {
 				log.Print(err)
 
-				text := "Sorry, but something went wrong. I'll inform developers about this issue. Please, try again a bit later."
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
-				bot_app.Bot.Send(msg)
+				if _, ok := err.(telegramBotAppUserInputError); ok {
+					// It's ok if we can't handle a message,
+					// because an user can send nonsense.
+					// Let's send a message saying that
+					// we don't understand the input.
+					bot_app.handleUnrecognisedMessage(update.Message)
+				} else {
+					// Other types of error mean that we are in trouble
+					// and we need to do something with it
+					text := "Sorry, but something went wrong. I'll inform developers about this issue. Please, try again a bit later."
+					msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+					bot_app.Bot.Send(msg)
+				}
 			}
 		}(update)
 	}
@@ -87,23 +105,18 @@ func (bot_app TelegramBotApp) handleMessage(message *tgbotapi.Message) error {
 
 	var err error
 	err = bot_app.handleMessageEntities(message)
-	// We should stop trying to handle a message in case we've received a
-	// message with a command that we don't support.
-	if err != nil && err != errCommandIsNotSupported {
-		// If we are unable to handle message entities
-		// we need to try to handle message text.
+	// If we are unable to handle message entities
+	// we need to try to handle message text.
+	// But should stop trying to handle a message
+	// in case when we receive nonsense from a user
+	// Error of type telegramBotAppUserInputError means
+	// we should skip further processing
+	if _, ok := err.(telegramBotAppUserInputError); !ok && err != nil {
 		err = bot_app.handleMessageText(message)
 	}
 
-	if err != nil {
-		// It's ok if we can't handle the message:
-		// we shouldn't return an error in this case,
-		// because probably our user just sends us nonsense.
-		// Let's send a message saying that we don't understand the input.
-		bot_app.handleUnrecognisedMessage(message)
-	}
-
-	return nil
+	// Bypass err to the caller function
+	return err
 }
 
 // handleMessageEntities handles entities form a message
@@ -126,7 +139,8 @@ func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) e
 		return bot_app.handleClear(message)
 	}
 
-	return errCommandIsNotSupported
+	return telegramBotAppUserInputError{
+		errors.New("Unable to find a handler for a command")}
 }
 
 // handleMessageText handles text from a message.
@@ -146,10 +160,11 @@ func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) error
 	if session == nil {
 		// Unfinished command doesn't exist. It's ok,
 		// but we need to return an error just to indicate that
-		// we didn't manage to hande this message
-		return fmt.Errorf(
-			"Cand find unfinished commands for (ChatID=%d and UserId=%d)",
-			message.Chat.ID, message.From.ID)
+		// we didn't manage to handele this message
+		return telegramBotAppUserInputError{
+			fmt.Errorf(
+				"Cand find unfinished commands (ChatID=%d and UserId=%d)",
+				message.Chat.ID, message.From.ID)}
 	}
 
 	switch session.Command {
@@ -166,7 +181,8 @@ func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) error
 		return bot_app.handleAddSession(message)
 	}
 
-	return errors.New("Unable to find a handler for the message")
+	return telegramBotAppUserInputError{
+		errors.New("Unable to find a handler for the message")}
 }
 
 func (bot_app TelegramBotApp) _handleHelpMessage(message *tgbotapi.Message, isStart bool) {
