@@ -16,7 +16,7 @@ RUN make build
 
 
 # Image build
-FROM golang:1.9
+FROM golang:1.9-alpine3.7
 WORKDIR /app/bin/
 
 # Copy a binary from the build step
