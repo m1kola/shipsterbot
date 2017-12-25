@@ -4,13 +4,20 @@ go:
 
 # Use container-based infrastructure
 dist: trusty
-sudo: false
+sudo: required
+
+services:
+  - docker
 
 
 # Install project dependencies
 install:
   - make vendor
 
-# Run tests
 script:
+  # Run tests
   - make test
+
+  # Build a docker image
+  - docker build -t m1kola/shipsterbot .
+  - docker images
