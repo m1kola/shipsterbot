@@ -20,4 +20,16 @@ script:
 
   # Build a docker image
   - docker build -t m1kola/shipsterbot .
-  - docker images
+  - docker images m1kola/shipsterbot
+
+  # Trigger a build in the public docker registry
+  # Only triggers on the master branch
+  #
+  # Note that TRAVIS_BRANCH for builds triggered by a pull request this is
+  # the name of the branch targeted by the pull request
+  # so we need to use check TRAVIS_PULL_REQUEST too.
+  # See https://docs.travis-ci.com/user/environment-variables/#Default-Environment-Variables
+  - >
+    if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+    curl -H "Content-Type: application/json" --data '{"source_type": "Branch", "source_name": "master"}' -X POST https://registry.hub.docker.com/u/m1kola/shipsterbot/trigger/"$DOCKER_HUB_TRIGGER_TOKEN"/;
+    fi;
