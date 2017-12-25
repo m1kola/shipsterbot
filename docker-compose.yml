@@ -12,7 +12,7 @@ networks:
 services:
   # The bot application
   shipsterbot_app:
-    build: .
+    image: m1kola/shipsterbot:latest
     restart: always
     networks:
       - backend
