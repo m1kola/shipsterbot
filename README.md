@@ -116,7 +116,7 @@ So to run the application you need to do the following:
     # Optional
     export TELEGRAM_TLS_CERT_PATH=/path/to/your/telegram_public.pem
     export TELEGRAM_TLS_KEY_PATH=/path/to/your/telegram_private.key
-    export DEBUG=trueÂ
+    export DEBUG=true
     ```
 3. Run migrations database migrations:
 
