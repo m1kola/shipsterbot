@@ -38,7 +38,7 @@ func GetTelegramWebhookPort() (string, error) {
 	}
 
 	err := fmt.Errorf(
-		"Wrong port. You can only use one of the follwoing ports: %s",
+		"Wrong port. You can only use one of the following ports: %s",
 		strings.Join(allowedPorts, ", "))
 	return "", err
 }
