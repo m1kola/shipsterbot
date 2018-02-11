@@ -1,4 +1,4 @@
-package bot
+package telegram
 
 import (
 	"errors"
@@ -12,9 +12,9 @@ import (
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
-// TelegramBotApp is a struct for handeling interactions
+// BotApp is a struct for handeling interactions
 // with the Telegram API
-type TelegramBotApp struct {
+type BotApp struct {
 	Bot     *tgbotapi.BotAPI
 	Storage storage.DataStorageInterface
 }
@@ -24,7 +24,7 @@ var errCommandIsNotSupported = handlerCanNotHandleError{
 
 // ListenForWebhook starts a goroutine with an infinite loop
 // to receives updates from Telegram.
-func (bot_app TelegramBotApp) ListenForWebhook() {
+func (bot_app BotApp) ListenForWebhook() {
 	updates := bot_app.Bot.ListenForWebhook(
 		fmt.Sprintf("/%s/webhook", bot_app.Bot.Token))
 
@@ -32,7 +32,7 @@ func (bot_app TelegramBotApp) ListenForWebhook() {
 }
 
 // handleUpdates receives updates and starts goroutines to handle them
-func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
+func (bot_app BotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 	for update := range updates {
 		go func(update tgbotapi.Update) {
 			var err error
@@ -71,7 +71,7 @@ func (bot_app TelegramBotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 
 // handleCallbackQuery handles user's interactions with the client's UI
 // User can interaction with a bot using an inline keyboard, for example
-func (bot_app TelegramBotApp) handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) error {
+func (bot_app BotApp) handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) error {
 	if callbackQuery.Data == "" {
 		return handlerCanNotHandleError{
 			errors.New("Empty data in the CallbackQuery")}
@@ -100,7 +100,7 @@ func (bot_app TelegramBotApp) handleCallbackQuery(callbackQuery *tgbotapi.Callba
 // handleMessage handles messages.
 // Messages can contain entities in some cases (commands, mentions, etc),
 // but can also be plain text messages.
-func (bot_app TelegramBotApp) handleMessage(message *tgbotapi.Message) error {
+func (bot_app BotApp) handleMessage(message *tgbotapi.Message) error {
 	log.Printf("Message received: \"%s\"", message.Text)
 
 	err := bot_app.handleMessageEntities(message)
@@ -120,7 +120,7 @@ func (bot_app TelegramBotApp) handleMessage(message *tgbotapi.Message) error {
 }
 
 // handleMessageEntities handles entities form a message
-func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) error {
+func (bot_app BotApp) handleMessageEntities(message *tgbotapi.Message) error {
 	if message.Entities == nil {
 		return handlerCanNotHandleError{
 			errors.New("Message doesn't have entities to handle")}
@@ -147,7 +147,7 @@ func (bot_app TelegramBotApp) handleMessageEntities(message *tgbotapi.Message) e
 // Normally we listen to user's text commands or inline keyboard,
 // but in some cases we need to handle message text.
 // For example, when user asks us to add an item into the shopping list.
-func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) error {
+func (bot_app BotApp) handleMessageText(message *tgbotapi.Message) error {
 	session, err := bot_app.Storage.GetUnfinishedCommand(message.Chat.ID,
 		message.From.ID)
 
@@ -185,7 +185,7 @@ func (bot_app TelegramBotApp) handleMessageText(message *tgbotapi.Message) error
 		errors.New("Unable to find a handler for the message")}
 }
 
-func (bot_app TelegramBotApp) _handleHelpMessage(message *tgbotapi.Message, isStart bool) {
+func (bot_app BotApp) _handleHelpMessage(message *tgbotapi.Message, isStart bool) {
 	var greeting string
 	if isStart {
 		greeting = "Hi %s,"
@@ -211,12 +211,12 @@ You can control me by sending these commands:
 	bot_app.Bot.Send(msg)
 }
 
-func (bot_app TelegramBotApp) handleStart(message *tgbotapi.Message) error {
+func (bot_app BotApp) handleStart(message *tgbotapi.Message) error {
 	bot_app._handleHelpMessage(message, true)
 	return nil
 }
 
-func (bot_app TelegramBotApp) handleUnrecognisedMessage(message *tgbotapi.Message) {
+func (bot_app BotApp) handleUnrecognisedMessage(message *tgbotapi.Message) {
 	if len(message.Text) > 0 {
 		log.Print("No supported bot commands found")
 
@@ -227,7 +227,7 @@ func (bot_app TelegramBotApp) handleUnrecognisedMessage(message *tgbotapi.Messag
 	}
 }
 
-func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) error {
+func (bot_app BotApp) handleAdd(message *tgbotapi.Message) error {
 	itemName := message.CommandArguments()
 
 	if itemName != "" {
@@ -271,7 +271,7 @@ func (bot_app TelegramBotApp) handleAdd(message *tgbotapi.Message) error {
 	return nil
 }
 
-func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) error {
+func (bot_app BotApp) handleList(message *tgbotapi.Message) error {
 	var text string
 	chatID := message.Chat.ID
 
@@ -307,7 +307,7 @@ func (bot_app TelegramBotApp) handleList(message *tgbotapi.Message) error {
 	return nil
 }
 
-func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) error {
+func (bot_app BotApp) handleAddSession(message *tgbotapi.Message) error {
 	itemName := message.CommandArguments()
 	if itemName == "" {
 		itemName = message.Text
@@ -330,7 +330,7 @@ func (bot_app TelegramBotApp) handleAddSession(message *tgbotapi.Message) error 
 	return nil
 }
 
-func (bot_app TelegramBotApp) handleDel(message *tgbotapi.Message) error {
+func (bot_app BotApp) handleDel(message *tgbotapi.Message) error {
 	var text string
 	var itemButtonRows [][]tgbotapi.InlineKeyboardButton
 
@@ -366,7 +366,7 @@ func (bot_app TelegramBotApp) handleDel(message *tgbotapi.Message) error {
 	return nil
 }
 
-func (bot_app TelegramBotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
+func (bot_app BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
 	bot_app.Bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
@@ -424,7 +424,7 @@ func (bot_app TelegramBotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.Cal
 	return nil
 }
 
-func (bot_app TelegramBotApp) handleClear(message *tgbotapi.Message) error {
+func (bot_app BotApp) handleClear(message *tgbotapi.Message) error {
 	var text string
 
 	chatID := message.Chat.ID
@@ -456,7 +456,7 @@ func (bot_app TelegramBotApp) handleClear(message *tgbotapi.Message) error {
 	return nil
 }
 
-func (bot_app TelegramBotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
+func (bot_app BotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
 	bot_app.Bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 

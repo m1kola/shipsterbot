@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 
-	"github.com/m1kola/shipsterbot/bot"
+	"github.com/m1kola/shipsterbot/bot/telegram"
 	"github.com/m1kola/shipsterbot/env"
 	"github.com/m1kola/shipsterbot/storage"
 )
@@ -43,7 +43,7 @@ var startTelegramBotCmd = &cobra.Command{
 		log.Printf("Authorised on account %s", tgbot.Self.UserName)
 
 		// Create a app bot instance
-		botApp := bot.TelegramBotApp{
+		botApp := telegram.BotApp{
 			Bot:     tgbot,
 			Storage: storage.NewSQLStorage(db)}
 		botApp.ListenForWebhook()
