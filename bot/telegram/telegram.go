@@ -52,7 +52,7 @@ func NewBotApp(
 }
 
 // Start starts the  bot
-func (bapp BotApp) Start() error {
+func (bapp *BotApp) Start() error {
 	bapp.listenForWebhook()
 
 	err := startWebhookServer(
@@ -65,7 +65,7 @@ func (bapp BotApp) Start() error {
 
 // listenForWebhook starts a goroutine with an infinite loop
 // to receives updates from Telegram.
-func (bapp BotApp) listenForWebhook() {
+func (bapp *BotApp) listenForWebhook() {
 	updates := bapp.bot.ListenForWebhook(
 		fmt.Sprintf("/%s/webhook", bapp.bot.Token))
 
@@ -73,7 +73,7 @@ func (bapp BotApp) listenForWebhook() {
 }
 
 // handleUpdates receives updates and starts goroutines to handle them
-func (bapp BotApp) handleUpdates(updates <-chan tgbotapi.Update) {
+func (bapp *BotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 	for update := range updates {
 		go func(update tgbotapi.Update) {
 			var err error
@@ -112,7 +112,7 @@ func (bapp BotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 
 // handleCallbackQuery handles user's interactions with the client's UI
 // User can interaction with a bot using an inline keyboard, for example
-func (bapp BotApp) handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) error {
+func (bapp *BotApp) handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) error {
 	if callbackQuery.Data == "" {
 		return handlerCanNotHandleError{
 			errors.New("Empty data in the CallbackQuery")}
@@ -141,7 +141,7 @@ func (bapp BotApp) handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) er
 // handleMessage handles messages.
 // Messages can contain entities in some cases (commands, mentions, etc),
 // but can also be plain text messages.
-func (bapp BotApp) handleMessage(message *tgbotapi.Message) error {
+func (bapp *BotApp) handleMessage(message *tgbotapi.Message) error {
 	log.Printf("Message received: \"%s\"", message.Text)
 
 	err := bapp.handleMessageEntities(message)
@@ -161,7 +161,7 @@ func (bapp BotApp) handleMessage(message *tgbotapi.Message) error {
 }
 
 // handleMessageEntities handles entities form a message
-func (bapp BotApp) handleMessageEntities(message *tgbotapi.Message) error {
+func (bapp *BotApp) handleMessageEntities(message *tgbotapi.Message) error {
 	if message.Entities == nil {
 		return handlerCanNotHandleError{
 			errors.New("Message doesn't have entities to handle")}
@@ -188,7 +188,7 @@ func (bapp BotApp) handleMessageEntities(message *tgbotapi.Message) error {
 // Normally we listen to user's text commands or inline keyboard,
 // but in some cases we need to handle message text.
 // For example, when user asks us to add an item into the shopping list.
-func (bapp BotApp) handleMessageText(message *tgbotapi.Message) error {
+func (bapp *BotApp) handleMessageText(message *tgbotapi.Message) error {
 	session, err := bapp.storage.GetUnfinishedCommand(message.Chat.ID,
 		message.From.ID)
 
@@ -226,7 +226,7 @@ func (bapp BotApp) handleMessageText(message *tgbotapi.Message) error {
 		errors.New("Unable to find a handler for the message")}
 }
 
-func (bapp BotApp) _handleHelpMessage(message *tgbotapi.Message, isStart bool) {
+func (bapp *BotApp) _handleHelpMessage(message *tgbotapi.Message, isStart bool) {
 	var greeting string
 	if isStart {
 		greeting = "Hi %s,"
@@ -252,12 +252,12 @@ You can control me by sending these commands:
 	bapp.bot.Send(msg)
 }
 
-func (bapp BotApp) handleStart(message *tgbotapi.Message) error {
+func (bapp *BotApp) handleStart(message *tgbotapi.Message) error {
 	bapp._handleHelpMessage(message, true)
 	return nil
 }
 
-func (bapp BotApp) handleUnrecognisedMessage(message *tgbotapi.Message) {
+func (bapp *BotApp) handleUnrecognisedMessage(message *tgbotapi.Message) {
 	if len(message.Text) > 0 {
 		log.Print("No supported bot commands found")
 
@@ -268,7 +268,7 @@ func (bapp BotApp) handleUnrecognisedMessage(message *tgbotapi.Message) {
 	}
 }
 
-func (bapp BotApp) handleAdd(message *tgbotapi.Message) error {
+func (bapp *BotApp) handleAdd(message *tgbotapi.Message) error {
 	itemName := message.CommandArguments()
 
 	if itemName != "" {
@@ -312,7 +312,7 @@ func (bapp BotApp) handleAdd(message *tgbotapi.Message) error {
 	return nil
 }
 
-func (bapp BotApp) handleList(message *tgbotapi.Message) error {
+func (bapp *BotApp) handleList(message *tgbotapi.Message) error {
 	var text string
 	chatID := message.Chat.ID
 
@@ -348,7 +348,7 @@ func (bapp BotApp) handleList(message *tgbotapi.Message) error {
 	return nil
 }
 
-func (bapp BotApp) handleAddSession(message *tgbotapi.Message) error {
+func (bapp *BotApp) handleAddSession(message *tgbotapi.Message) error {
 	itemName := message.CommandArguments()
 	if itemName == "" {
 		itemName = message.Text
@@ -371,7 +371,7 @@ func (bapp BotApp) handleAddSession(message *tgbotapi.Message) error {
 	return nil
 }
 
-func (bapp BotApp) handleDel(message *tgbotapi.Message) error {
+func (bapp *BotApp) handleDel(message *tgbotapi.Message) error {
 	var text string
 	var itemButtonRows [][]tgbotapi.InlineKeyboardButton
 
@@ -407,7 +407,7 @@ func (bapp BotApp) handleDel(message *tgbotapi.Message) error {
 	return nil
 }
 
-func (bapp BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
+func (bapp *BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
 	bapp.bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
@@ -465,7 +465,7 @@ func (bapp BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQuery,
 	return nil
 }
 
-func (bapp BotApp) handleClear(message *tgbotapi.Message) error {
+func (bapp *BotApp) handleClear(message *tgbotapi.Message) error {
 	var text string
 
 	chatID := message.Chat.ID
@@ -497,7 +497,7 @@ func (bapp BotApp) handleClear(message *tgbotapi.Message) error {
 	return nil
 }
 
-func (bapp BotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
+func (bapp *BotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
 	bapp.bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
