@@ -12,21 +12,62 @@ import (
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
-// BotApp is a struct for handeling interactions
-// with the Telegram API
-type BotApp struct {
-	Bot     *tgbotapi.BotAPI
-	Storage storage.DataStorageInterface
-}
-
 var errCommandIsNotSupported = handlerCanNotHandleError{
 	errors.New("Unable to find a handler for a command")}
 
-// ListenForWebhook starts a goroutine with an infinite loop
+type webHookServerConfig struct {
+	port        string
+	TLSCertPath string
+	TLSKeyPath  string
+}
+
+// BotApp is a struct for handeling interactions
+// with the Telegram API
+type BotApp struct {
+	// TODO: Define an interface for for BotAPI
+	bot          *tgbotapi.BotAPI
+	storage      storage.DataStorageInterface
+	serverConfig *webHookServerConfig
+}
+
+// NewBotApp creates a new instance of a bot struct
+func NewBotApp(
+	tgbot *tgbotapi.BotAPI,
+	storage storage.DataStorageInterface,
+	port, TLSCertPath, TLSKeyPath string,
+) *BotApp {
+	serverConfig := &webHookServerConfig{
+		port:        port,
+		TLSCertPath: TLSCertPath,
+		TLSKeyPath:  TLSKeyPath,
+	}
+
+	botApp := BotApp{
+		bot:          tgbot,
+		storage:      storage,
+		serverConfig: serverConfig,
+	}
+
+	return &botApp
+}
+
+// Start starts the  bot
+func (bot_app BotApp) Start() error {
+	bot_app.listenForWebhook()
+
+	err := startWebhookServer(
+		bot_app.serverConfig.port,
+		bot_app.serverConfig.TLSCertPath,
+		bot_app.serverConfig.TLSKeyPath,
+	)
+	return err
+}
+
+// listenForWebhook starts a goroutine with an infinite loop
 // to receives updates from Telegram.
-func (bot_app BotApp) ListenForWebhook() {
-	updates := bot_app.Bot.ListenForWebhook(
-		fmt.Sprintf("/%s/webhook", bot_app.Bot.Token))
+func (bot_app BotApp) listenForWebhook() {
+	updates := bot_app.bot.ListenForWebhook(
+		fmt.Sprintf("/%s/webhook", bot_app.bot.Token))
 
 	go bot_app.handleUpdates(updates)
 }
@@ -62,7 +103,7 @@ func (bot_app BotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 					// and we need to do something with it
 					text := "Sorry, but something went wrong. I'll inform developers about this issue. Please, try again a bit later."
 					msg := tgbotapi.NewMessage(message.Chat.ID, text)
-					bot_app.Bot.Send(msg)
+					bot_app.bot.Send(msg)
 				}
 			}
 		}(update)
@@ -148,7 +189,7 @@ func (bot_app BotApp) handleMessageEntities(message *tgbotapi.Message) error {
 // but in some cases we need to handle message text.
 // For example, when user asks us to add an item into the shopping list.
 func (bot_app BotApp) handleMessageText(message *tgbotapi.Message) error {
-	session, err := bot_app.Storage.GetUnfinishedCommand(message.Chat.ID,
+	session, err := bot_app.storage.GetUnfinishedCommand(message.Chat.ID,
 		message.From.ID)
 
 	if err != nil {
@@ -169,7 +210,7 @@ func (bot_app BotApp) handleMessageText(message *tgbotapi.Message) error {
 
 	switch session.Command {
 	case models.CommandAddShoppingItem:
-		err := bot_app.Storage.DeleteUnfinishedCommand(message.Chat.ID,
+		err := bot_app.storage.DeleteUnfinishedCommand(message.Chat.ID,
 			message.From.ID)
 
 		if err != nil {
@@ -208,7 +249,7 @@ You can control me by sending these commands:
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
-	bot_app.Bot.Send(msg)
+	bot_app.bot.Send(msg)
 }
 
 func (bot_app BotApp) handleStart(message *tgbotapi.Message) error {
@@ -238,7 +279,7 @@ func (bot_app BotApp) handleAdd(message *tgbotapi.Message) error {
 	// If an item name is not provided in arguments,
 	// allow the user to add an item following the two-step process
 	command := models.CommandAddShoppingItem
-	err := bot_app.Storage.AddUnfinishedCommand(models.UnfinishedCommand{
+	err := bot_app.storage.AddUnfinishedCommand(models.UnfinishedCommand{
 		Command:   command,
 		ChatID:    message.Chat.ID,
 		CreatedBy: message.From.ID,
@@ -266,7 +307,7 @@ func (bot_app BotApp) handleAdd(message *tgbotapi.Message) error {
 		}
 	}
 
-	bot_app.Bot.Send(msg)
+	bot_app.bot.Send(msg)
 
 	return nil
 }
@@ -275,7 +316,7 @@ func (bot_app BotApp) handleList(message *tgbotapi.Message) error {
 	var text string
 	chatID := message.Chat.ID
 
-	chatItems, err := bot_app.Storage.GetShoppingItems(chatID)
+	chatItems, err := bot_app.storage.GetShoppingItems(chatID)
 	if err != nil {
 		return fmt.Errorf(
 			"Unable to get all shopping items (ChatID=%d): %v",
@@ -302,7 +343,7 @@ func (bot_app BotApp) handleList(message *tgbotapi.Message) error {
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
-	bot_app.Bot.Send(msg)
+	bot_app.bot.Send(msg)
 
 	return nil
 }
@@ -313,7 +354,7 @@ func (bot_app BotApp) handleAddSession(message *tgbotapi.Message) error {
 		itemName = message.Text
 	}
 
-	err := bot_app.Storage.AddShoppingItemIntoShoppingList(models.ShoppingItem{
+	err := bot_app.storage.AddShoppingItemIntoShoppingList(models.ShoppingItem{
 		Name:      itemName,
 		ChatID:    message.Chat.ID,
 		CreatedBy: message.From.ID})
@@ -326,7 +367,7 @@ func (bot_app BotApp) handleAddSession(message *tgbotapi.Message) error {
 	text := "Lovely! I've added \"%s\" into your shopping list. Anything else?"
 	text = fmt.Sprintf(text, itemName)
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
-	bot_app.Bot.Send(msg)
+	bot_app.bot.Send(msg)
 	return nil
 }
 
@@ -335,7 +376,7 @@ func (bot_app BotApp) handleDel(message *tgbotapi.Message) error {
 	var itemButtonRows [][]tgbotapi.InlineKeyboardButton
 
 	chatID := message.Chat.ID
-	chatItems, err := bot_app.Storage.GetShoppingItems(chatID)
+	chatItems, err := bot_app.storage.GetShoppingItems(chatID)
 	if err != nil {
 		return fmt.Errorf(
 			"Unable to get all shopping items (ChatID=%d): %v",
@@ -361,13 +402,13 @@ func (bot_app BotApp) handleDel(message *tgbotapi.Message) error {
 		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 			itemButtonRows...)
 	}
-	bot_app.Bot.Send(msg)
+	bot_app.bot.Send(msg)
 
 	return nil
 }
 
 func (bot_app BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
-	bot_app.Bot.AnswerCallbackQuery(tgbotapi.NewCallback(
+	bot_app.bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
 	chatID := callbackQuery.Message.Chat.ID
@@ -381,7 +422,7 @@ func (bot_app BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQue
 	}
 
 	var text string
-	item, err := bot_app.Storage.GetShoppingItem(itemID)
+	item, err := bot_app.storage.GetShoppingItem(itemID)
 	if err != nil {
 		return fmt.Errorf(
 			"Unable to get a shopping item (ItemID=%d): %v",
@@ -389,7 +430,7 @@ func (bot_app BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQue
 	}
 
 	if item != nil {
-		err := bot_app.Storage.DeleteShoppingItem(itemID)
+		err := bot_app.storage.DeleteShoppingItem(itemID)
 		if err != nil {
 			return fmt.Errorf(
 				"Unable to delete a shopping item (ItemID=%d): %v",
@@ -412,13 +453,13 @@ func (bot_app BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQue
 			messageID,
 			tgbotapi.NewInlineKeyboardMarkup(
 				[]tgbotapi.InlineKeyboardButton{}))
-		bot_app.Bot.Send(msg)
+		bot_app.bot.Send(msg)
 	}
 
 	// Send deletion confimration text
 	{
 		msg := tgbotapi.NewMessage(chatID, text)
-		bot_app.Bot.Send(msg)
+		bot_app.bot.Send(msg)
 	}
 
 	return nil
@@ -429,7 +470,7 @@ func (bot_app BotApp) handleClear(message *tgbotapi.Message) error {
 
 	chatID := message.Chat.ID
 
-	chatItems, err := bot_app.Storage.GetShoppingItems(chatID)
+	chatItems, err := bot_app.storage.GetShoppingItems(chatID)
 	if err != nil {
 		// User can't amend CallBackData, so most likely it's our fault
 		return fmt.Errorf(
@@ -452,12 +493,12 @@ func (bot_app BotApp) handleClear(message *tgbotapi.Message) error {
 				tgbotapi.NewInlineKeyboardButtonData("Yes", "clear:1"),
 				tgbotapi.NewInlineKeyboardButtonData("Cancel", "clear:0")})
 	}
-	bot_app.Bot.Send(msg)
+	bot_app.bot.Send(msg)
 	return nil
 }
 
 func (bot_app BotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
-	bot_app.Bot.AnswerCallbackQuery(tgbotapi.NewCallback(
+	bot_app.bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
 	chatID := callbackQuery.Message.Chat.ID
@@ -473,7 +514,7 @@ func (bot_app BotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQ
 	if confirmed {
 		text = "Ok, I've deleted all items from you shopping list.\n\nNow you can start from scratch, if you wish."
 
-		err := bot_app.Storage.DeleteAllShoppingItems(chatID)
+		err := bot_app.storage.DeleteAllShoppingItems(chatID)
 		if err != nil {
 			return fmt.Errorf(
 				"Unable to delete all shopping items (ChatID=%d): %v",
@@ -490,13 +531,13 @@ func (bot_app BotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQ
 			messageID,
 			tgbotapi.NewInlineKeyboardMarkup(
 				[]tgbotapi.InlineKeyboardButton{}))
-		bot_app.Bot.Send(msg)
+		bot_app.bot.Send(msg)
 	}
 
 	// Send deletion confimration text
 	{
 		msg := tgbotapi.NewMessage(chatID, text)
-		bot_app.Bot.Send(msg)
+		bot_app.bot.Send(msg)
 	}
 
 	return nil

@@ -1,9 +1,9 @@
 package env
 
 import (
-	"fmt"
 	"os"
-	"strings"
+
+	"github.com/m1kola/shipsterbot/bot/telegram"
 )
 
 // GetTelegramAPIToken returns telegram bot api token
@@ -24,21 +24,14 @@ func GetTelegramTLSKeyPath() string {
 // GetTelegramWebhookPort returns port for Telegram webhook server
 // Default port is 8443
 func GetTelegramWebhookPort() (string, error) {
-	allowedPorts := []string{"443", "80", "88", "8443"}
 	value, ok := os.LookupEnv("TELEGRAM_WEBHOOK_PORT")
-
 	if !ok {
 		return "8443", nil
 	}
 
-	for _, allowedValue := range allowedPorts {
-		if value == allowedValue {
-			return value, nil
-		}
+	err := telegram.ValidateWebhookPort(value)
+	if err != nil {
+		return "", err
 	}
-
-	err := fmt.Errorf(
-		"Wrong port. You can only use one of the following ports: %s",
-		strings.Join(allowedPorts, ", "))
-	return "", err
+	return value, nil
 }
