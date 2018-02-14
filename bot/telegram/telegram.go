@@ -52,28 +52,28 @@ func NewBotApp(
 }
 
 // Start starts the  bot
-func (bot_app BotApp) Start() error {
-	bot_app.listenForWebhook()
+func (bapp BotApp) Start() error {
+	bapp.listenForWebhook()
 
 	err := startWebhookServer(
-		bot_app.serverConfig.port,
-		bot_app.serverConfig.TLSCertPath,
-		bot_app.serverConfig.TLSKeyPath,
+		bapp.serverConfig.port,
+		bapp.serverConfig.TLSCertPath,
+		bapp.serverConfig.TLSKeyPath,
 	)
 	return err
 }
 
 // listenForWebhook starts a goroutine with an infinite loop
 // to receives updates from Telegram.
-func (bot_app BotApp) listenForWebhook() {
-	updates := bot_app.bot.ListenForWebhook(
-		fmt.Sprintf("/%s/webhook", bot_app.bot.Token))
+func (bapp BotApp) listenForWebhook() {
+	updates := bapp.bot.ListenForWebhook(
+		fmt.Sprintf("/%s/webhook", bapp.bot.Token))
 
-	go bot_app.handleUpdates(updates)
+	go bapp.handleUpdates(updates)
 }
 
 // handleUpdates receives updates and starts goroutines to handle them
-func (bot_app BotApp) handleUpdates(updates <-chan tgbotapi.Update) {
+func (bapp BotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 	for update := range updates {
 		go func(update tgbotapi.Update) {
 			var err error
@@ -82,11 +82,11 @@ func (bot_app BotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 			if update.CallbackQuery != nil {
 				message = update.CallbackQuery.Message
 
-				err = bot_app.handleCallbackQuery(update.CallbackQuery)
+				err = bapp.handleCallbackQuery(update.CallbackQuery)
 			} else if update.Message != nil {
 				message = update.Message
 
-				err = bot_app.handleMessage(message)
+				err = bapp.handleMessage(message)
 			}
 
 			if err != nil {
@@ -97,13 +97,13 @@ func (bot_app BotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 					// because an user can send nonsense.
 					// Let's send a message saying that
 					// we don't understand the input.
-					bot_app.handleUnrecognisedMessage(message)
+					bapp.handleUnrecognisedMessage(message)
 				} else {
 					// Other types of error mean that we are in trouble
 					// and we need to do something with it
 					text := "Sorry, but something went wrong. I'll inform developers about this issue. Please, try again a bit later."
 					msg := tgbotapi.NewMessage(message.Chat.ID, text)
-					bot_app.bot.Send(msg)
+					bapp.bot.Send(msg)
 				}
 			}
 		}(update)
@@ -112,7 +112,7 @@ func (bot_app BotApp) handleUpdates(updates <-chan tgbotapi.Update) {
 
 // handleCallbackQuery handles user's interactions with the client's UI
 // User can interaction with a bot using an inline keyboard, for example
-func (bot_app BotApp) handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) error {
+func (bapp BotApp) handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery) error {
 	if callbackQuery.Data == "" {
 		return handlerCanNotHandleError{
 			errors.New("Empty data in the CallbackQuery")}
@@ -128,9 +128,9 @@ func (bot_app BotApp) handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery)
 	botCommand := dataPieces[0]
 	switch botCommand {
 	case "del":
-		return bot_app.handleDelCallbackQuery(callbackQuery, dataPieces[1])
+		return bapp.handleDelCallbackQuery(callbackQuery, dataPieces[1])
 	case "clear":
-		return bot_app.handleClearCallbackQuery(callbackQuery, dataPieces[1])
+		return bapp.handleClearCallbackQuery(callbackQuery, dataPieces[1])
 	}
 
 	return handlerCanNotHandleError{
@@ -141,10 +141,10 @@ func (bot_app BotApp) handleCallbackQuery(callbackQuery *tgbotapi.CallbackQuery)
 // handleMessage handles messages.
 // Messages can contain entities in some cases (commands, mentions, etc),
 // but can also be plain text messages.
-func (bot_app BotApp) handleMessage(message *tgbotapi.Message) error {
+func (bapp BotApp) handleMessage(message *tgbotapi.Message) error {
 	log.Printf("Message received: \"%s\"", message.Text)
 
-	err := bot_app.handleMessageEntities(message)
+	err := bapp.handleMessageEntities(message)
 	// We should only try to continue processing an message,
 	// if we receive an handlerCanNotHandleError error.
 	if _, ok := err.(handlerCanNotHandleError); ok {
@@ -154,14 +154,14 @@ func (bot_app BotApp) handleMessage(message *tgbotapi.Message) error {
 			return err
 		}
 
-		return bot_app.handleMessageText(message)
+		return bapp.handleMessageText(message)
 	}
 
 	return err
 }
 
 // handleMessageEntities handles entities form a message
-func (bot_app BotApp) handleMessageEntities(message *tgbotapi.Message) error {
+func (bapp BotApp) handleMessageEntities(message *tgbotapi.Message) error {
 	if message.Entities == nil {
 		return handlerCanNotHandleError{
 			errors.New("Message doesn't have entities to handle")}
@@ -170,15 +170,15 @@ func (bot_app BotApp) handleMessageEntities(message *tgbotapi.Message) error {
 	botCommand := message.Command()
 	switch botCommand {
 	case "help", "start":
-		return bot_app.handleStart(message)
+		return bapp.handleStart(message)
 	case "add":
-		return bot_app.handleAdd(message)
+		return bapp.handleAdd(message)
 	case "list":
-		return bot_app.handleList(message)
+		return bapp.handleList(message)
 	case "del":
-		return bot_app.handleDel(message)
+		return bapp.handleDel(message)
 	case "clear":
-		return bot_app.handleClear(message)
+		return bapp.handleClear(message)
 	}
 
 	return errCommandIsNotSupported
@@ -188,8 +188,8 @@ func (bot_app BotApp) handleMessageEntities(message *tgbotapi.Message) error {
 // Normally we listen to user's text commands or inline keyboard,
 // but in some cases we need to handle message text.
 // For example, when user asks us to add an item into the shopping list.
-func (bot_app BotApp) handleMessageText(message *tgbotapi.Message) error {
-	session, err := bot_app.storage.GetUnfinishedCommand(message.Chat.ID,
+func (bapp BotApp) handleMessageText(message *tgbotapi.Message) error {
+	session, err := bapp.storage.GetUnfinishedCommand(message.Chat.ID,
 		message.From.ID)
 
 	if err != nil {
@@ -210,7 +210,7 @@ func (bot_app BotApp) handleMessageText(message *tgbotapi.Message) error {
 
 	switch session.Command {
 	case models.CommandAddShoppingItem:
-		err := bot_app.storage.DeleteUnfinishedCommand(message.Chat.ID,
+		err := bapp.storage.DeleteUnfinishedCommand(message.Chat.ID,
 			message.From.ID)
 
 		if err != nil {
@@ -219,14 +219,14 @@ func (bot_app BotApp) handleMessageText(message *tgbotapi.Message) error {
 				message.Chat.ID, message.From.ID, err)
 		}
 
-		return bot_app.handleAddSession(message)
+		return bapp.handleAddSession(message)
 	}
 
 	return handlerCanNotHandleError{
 		errors.New("Unable to find a handler for the message")}
 }
 
-func (bot_app BotApp) _handleHelpMessage(message *tgbotapi.Message, isStart bool) {
+func (bapp BotApp) _handleHelpMessage(message *tgbotapi.Message, isStart bool) {
 	var greeting string
 	if isStart {
 		greeting = "Hi %s,"
@@ -249,37 +249,37 @@ You can control me by sending these commands:
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
-	bot_app.bot.Send(msg)
+	bapp.bot.Send(msg)
 }
 
-func (bot_app BotApp) handleStart(message *tgbotapi.Message) error {
-	bot_app._handleHelpMessage(message, true)
+func (bapp BotApp) handleStart(message *tgbotapi.Message) error {
+	bapp._handleHelpMessage(message, true)
 	return nil
 }
 
-func (bot_app BotApp) handleUnrecognisedMessage(message *tgbotapi.Message) {
+func (bapp BotApp) handleUnrecognisedMessage(message *tgbotapi.Message) {
 	if len(message.Text) > 0 {
 		log.Print("No supported bot commands found")
 
 		// Display help text only if we received
 		// a message text: we don't want to reply
 		// to service messages (people added or removed from the group, etc.)
-		bot_app._handleHelpMessage(message, false)
+		bapp._handleHelpMessage(message, false)
 	}
 }
 
-func (bot_app BotApp) handleAdd(message *tgbotapi.Message) error {
+func (bapp BotApp) handleAdd(message *tgbotapi.Message) error {
 	itemName := message.CommandArguments()
 
 	if itemName != "" {
 		// If item name is supplied - just add it
-		return bot_app.handleAddSession(message)
+		return bapp.handleAddSession(message)
 	}
 
 	// If an item name is not provided in arguments,
 	// allow the user to add an item following the two-step process
 	command := models.CommandAddShoppingItem
-	err := bot_app.storage.AddUnfinishedCommand(models.UnfinishedCommand{
+	err := bapp.storage.AddUnfinishedCommand(models.UnfinishedCommand{
 		Command:   command,
 		ChatID:    message.Chat.ID,
 		CreatedBy: message.From.ID,
@@ -307,16 +307,16 @@ func (bot_app BotApp) handleAdd(message *tgbotapi.Message) error {
 		}
 	}
 
-	bot_app.bot.Send(msg)
+	bapp.bot.Send(msg)
 
 	return nil
 }
 
-func (bot_app BotApp) handleList(message *tgbotapi.Message) error {
+func (bapp BotApp) handleList(message *tgbotapi.Message) error {
 	var text string
 	chatID := message.Chat.ID
 
-	chatItems, err := bot_app.storage.GetShoppingItems(chatID)
+	chatItems, err := bapp.storage.GetShoppingItems(chatID)
 	if err != nil {
 		return fmt.Errorf(
 			"Unable to get all shopping items (ChatID=%d): %v",
@@ -343,18 +343,18 @@ func (bot_app BotApp) handleList(message *tgbotapi.Message) error {
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
-	bot_app.bot.Send(msg)
+	bapp.bot.Send(msg)
 
 	return nil
 }
 
-func (bot_app BotApp) handleAddSession(message *tgbotapi.Message) error {
+func (bapp BotApp) handleAddSession(message *tgbotapi.Message) error {
 	itemName := message.CommandArguments()
 	if itemName == "" {
 		itemName = message.Text
 	}
 
-	err := bot_app.storage.AddShoppingItemIntoShoppingList(models.ShoppingItem{
+	err := bapp.storage.AddShoppingItemIntoShoppingList(models.ShoppingItem{
 		Name:      itemName,
 		ChatID:    message.Chat.ID,
 		CreatedBy: message.From.ID})
@@ -367,16 +367,16 @@ func (bot_app BotApp) handleAddSession(message *tgbotapi.Message) error {
 	text := "Lovely! I've added \"%s\" into your shopping list. Anything else?"
 	text = fmt.Sprintf(text, itemName)
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
-	bot_app.bot.Send(msg)
+	bapp.bot.Send(msg)
 	return nil
 }
 
-func (bot_app BotApp) handleDel(message *tgbotapi.Message) error {
+func (bapp BotApp) handleDel(message *tgbotapi.Message) error {
 	var text string
 	var itemButtonRows [][]tgbotapi.InlineKeyboardButton
 
 	chatID := message.Chat.ID
-	chatItems, err := bot_app.storage.GetShoppingItems(chatID)
+	chatItems, err := bapp.storage.GetShoppingItems(chatID)
 	if err != nil {
 		return fmt.Errorf(
 			"Unable to get all shopping items (ChatID=%d): %v",
@@ -402,13 +402,13 @@ func (bot_app BotApp) handleDel(message *tgbotapi.Message) error {
 		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 			itemButtonRows...)
 	}
-	bot_app.bot.Send(msg)
+	bapp.bot.Send(msg)
 
 	return nil
 }
 
-func (bot_app BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
-	bot_app.bot.AnswerCallbackQuery(tgbotapi.NewCallback(
+func (bapp BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
+	bapp.bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
 	chatID := callbackQuery.Message.Chat.ID
@@ -422,7 +422,7 @@ func (bot_app BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQue
 	}
 
 	var text string
-	item, err := bot_app.storage.GetShoppingItem(itemID)
+	item, err := bapp.storage.GetShoppingItem(itemID)
 	if err != nil {
 		return fmt.Errorf(
 			"Unable to get a shopping item (ItemID=%d): %v",
@@ -430,7 +430,7 @@ func (bot_app BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQue
 	}
 
 	if item != nil {
-		err := bot_app.storage.DeleteShoppingItem(itemID)
+		err := bapp.storage.DeleteShoppingItem(itemID)
 		if err != nil {
 			return fmt.Errorf(
 				"Unable to delete a shopping item (ItemID=%d): %v",
@@ -453,24 +453,24 @@ func (bot_app BotApp) handleDelCallbackQuery(callbackQuery *tgbotapi.CallbackQue
 			messageID,
 			tgbotapi.NewInlineKeyboardMarkup(
 				[]tgbotapi.InlineKeyboardButton{}))
-		bot_app.bot.Send(msg)
+		bapp.bot.Send(msg)
 	}
 
 	// Send deletion confimration text
 	{
 		msg := tgbotapi.NewMessage(chatID, text)
-		bot_app.bot.Send(msg)
+		bapp.bot.Send(msg)
 	}
 
 	return nil
 }
 
-func (bot_app BotApp) handleClear(message *tgbotapi.Message) error {
+func (bapp BotApp) handleClear(message *tgbotapi.Message) error {
 	var text string
 
 	chatID := message.Chat.ID
 
-	chatItems, err := bot_app.storage.GetShoppingItems(chatID)
+	chatItems, err := bapp.storage.GetShoppingItems(chatID)
 	if err != nil {
 		// User can't amend CallBackData, so most likely it's our fault
 		return fmt.Errorf(
@@ -493,12 +493,12 @@ func (bot_app BotApp) handleClear(message *tgbotapi.Message) error {
 				tgbotapi.NewInlineKeyboardButtonData("Yes", "clear:1"),
 				tgbotapi.NewInlineKeyboardButtonData("Cancel", "clear:0")})
 	}
-	bot_app.bot.Send(msg)
+	bapp.bot.Send(msg)
 	return nil
 }
 
-func (bot_app BotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
-	bot_app.bot.AnswerCallbackQuery(tgbotapi.NewCallback(
+func (bapp BotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQuery, data string) error {
+	bapp.bot.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
 	chatID := callbackQuery.Message.Chat.ID
@@ -514,7 +514,7 @@ func (bot_app BotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQ
 	if confirmed {
 		text = "Ok, I've deleted all items from you shopping list.\n\nNow you can start from scratch, if you wish."
 
-		err := bot_app.storage.DeleteAllShoppingItems(chatID)
+		err := bapp.storage.DeleteAllShoppingItems(chatID)
 		if err != nil {
 			return fmt.Errorf(
 				"Unable to delete all shopping items (ChatID=%d): %v",
@@ -531,13 +531,13 @@ func (bot_app BotApp) handleClearCallbackQuery(callbackQuery *tgbotapi.CallbackQ
 			messageID,
 			tgbotapi.NewInlineKeyboardMarkup(
 				[]tgbotapi.InlineKeyboardButton{}))
-		bot_app.bot.Send(msg)
+		bapp.bot.Send(msg)
 	}
 
 	// Send deletion confimration text
 	{
 		msg := tgbotapi.NewMessage(chatID, text)
-		bot_app.bot.Send(msg)
+		bapp.bot.Send(msg)
 	}
 
 	return nil
