@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
 // ValidateWebhookPort returns an error if an invalid port has been provided
@@ -45,4 +47,11 @@ func incommingRequstLogger(handler http.Handler) http.Handler {
 		log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
 		handler.ServeHTTP(w, r)
 	})
+}
+
+// getUpdatesChan regesters a webhook handler
+// and return a channel for consuming updates
+func getUpdatesChan(bot *tgbotapi.BotAPI) <-chan tgbotapi.Update {
+	return bot.ListenForWebhook(
+		fmt.Sprintf("/%s/webhook", bot.Token))
 }

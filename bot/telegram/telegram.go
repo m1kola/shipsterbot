@@ -24,7 +24,7 @@ type webHookServerConfig struct {
 // BotApp is a struct for handeling interactions
 // with the Telegram API
 type BotApp struct {
-	// TODO: Define an interface for for BotAPI
+	// TODO: Define interfaces for methods from BotAPI
 	bot          *tgbotapi.BotAPI
 	storage      storage.DataStorageInterface
 	serverConfig *webHookServerConfig
@@ -53,7 +53,8 @@ func NewBotApp(
 
 // Start starts the  bot
 func (bapp *BotApp) Start() error {
-	bapp.listenForWebhook()
+	updates := getUpdatesChan(bapp.bot)
+	go bapp.handleUpdates(updates)
 
 	err := startWebhookServer(
 		bapp.serverConfig.port,
@@ -61,15 +62,6 @@ func (bapp *BotApp) Start() error {
 		bapp.serverConfig.TLSKeyPath,
 	)
 	return err
-}
-
-// listenForWebhook starts a goroutine with an infinite loop
-// to receives updates from Telegram.
-func (bapp *BotApp) listenForWebhook() {
-	updates := bapp.bot.ListenForWebhook(
-		fmt.Sprintf("/%s/webhook", bapp.bot.Token))
-
-	go bapp.handleUpdates(updates)
 }
 
 // handleUpdates receives updates and starts goroutines to handle them
