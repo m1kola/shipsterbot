@@ -24,15 +24,14 @@ type webHookServerConfig struct {
 // BotApp is a struct for handeling interactions
 // with the Telegram API
 type BotApp struct {
-	// TODO: Define interfaces for methods from BotAPI
-	bot          *tgbotapi.BotAPI
+	bot          botClientInterface
 	storage      storage.DataStorageInterface
 	serverConfig *webHookServerConfig
 }
 
 // NewBotApp creates a new instance of a bot struct
 func NewBotApp(
-	tgbot *tgbotapi.BotAPI,
+	tgbot *APIClient,
 	storage storage.DataStorageInterface,
 	port, TLSCertPath, TLSKeyPath string,
 ) *BotApp {
@@ -43,7 +42,7 @@ func NewBotApp(
 	}
 
 	botApp := BotApp{
-		bot:          tgbot,
+		bot:          tgbot.botClient,
 		storage:      storage,
 		serverConfig: serverConfig,
 	}

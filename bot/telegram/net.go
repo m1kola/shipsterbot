@@ -51,7 +51,7 @@ func incommingRequstLogger(handler http.Handler) http.Handler {
 
 // getUpdatesChan regesters a webhook handler
 // and return a channel for consuming updates
-func getUpdatesChan(bot *tgbotapi.BotAPI) <-chan tgbotapi.Update {
+func getUpdatesChan(bot tokenListenForWebhook) <-chan tgbotapi.Update {
 	return bot.ListenForWebhook(
-		fmt.Sprintf("/%s/webhook", bot.Token))
+		fmt.Sprintf("/%s/webhook", bot.Token()))
 }

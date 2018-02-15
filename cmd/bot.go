@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
 
 	"github.com/m1kola/shipsterbot/bot/telegram"
 	"github.com/m1kola/shipsterbot/env"
@@ -33,12 +32,12 @@ var startTelegramBotCmd = &cobra.Command{
 		}
 
 		// Initialise a bot instance
-		tgbot, err := tgbotapi.NewBotAPI(env.GetTelegramAPIToken())
+		apiClient, err := telegram.NewAPIClient(env.GetTelegramAPIToken())
 		if err != nil {
 			log.Fatal(err)
 		}
-		tgbot.Debug = env.IsDebug()
-		log.Printf("Authorised on account %s", tgbot.Self.UserName)
+		apiClient.SetDebug(env.IsDebug())
+		log.Printf("Authorised on account %s", apiClient.BotUserName())
 
 		port, err := env.GetTelegramWebhookPort()
 		if err != nil {
@@ -49,7 +48,9 @@ var startTelegramBotCmd = &cobra.Command{
 
 		// Create a app bot instance
 		storage := storage.NewSQLStorage(db)
-		botApp := telegram.NewBotApp(tgbot, storage, port, TLSCertPath, TLSKeyPath)
+		botApp := telegram.NewBotApp(
+			apiClient, storage,
+			port, TLSCertPath, TLSKeyPath)
 		err = botApp.Start()
 		if err != nil {
 			log.Fatal(err)
