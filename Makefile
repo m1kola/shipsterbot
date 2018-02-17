@@ -74,7 +74,7 @@ build: vendor
 .PHONY: test
 test: vendor
 	cd $(BASE) && \
-	go test ./...
+	go test -race -cover ./...
 
 
 # Cleanup working directory
