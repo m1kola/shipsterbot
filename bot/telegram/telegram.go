@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -55,8 +56,12 @@ func (bapp *BotApp) Start() error {
 	updates := getUpdatesChan(bapp.bot)
 	go bapp.handleUpdates(updates)
 
-	err := startWebhookServer(
-		bapp.serverConfig.port,
+	server := newServerWithIncommingRequstLogger(
+		bapp.serverConfig.port, http.DefaultServeMux)
+
+	log.Printf("Start listening on %s", server.Addr)
+	err := listenAndServe(
+		server,
 		bapp.serverConfig.TLSCertPath,
 		bapp.serverConfig.TLSKeyPath,
 	)

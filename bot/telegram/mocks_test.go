@@ -12,6 +12,19 @@ func (mock *webhookListenerMock) ListenForWebhook(pattern string) tgbotapi.Updat
 	return mock.webhookListenerFunc(pattern)
 }
 
+type listenerAndServerMock struct {
+	listenAndServeTLSFunc func(certFile, keyFile string) error
+	listenAndServeFunc    func() error
+}
+
+func (mock *listenerAndServerMock) ListenAndServeTLS(certFile, keyFile string) error {
+	return mock.listenAndServeTLSFunc(certFile, keyFile)
+}
+
+func (mock *listenerAndServerMock) ListenAndServe() error {
+	return mock.listenAndServeFunc()
+}
+
 type tokenerMock struct {
 	fakeToken string
 }

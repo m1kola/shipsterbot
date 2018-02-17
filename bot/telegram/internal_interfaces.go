@@ -8,6 +8,12 @@ type webhookListener interface {
 	ListenForWebhook(pattern string) tgbotapi.UpdatesChannel
 }
 
+// listenAndServe replicates some http.Server signatures
+type listenerAndServer interface {
+	ListenAndServeTLS(certFile, keyFile string) error
+	ListenAndServe() error
+}
+
 type tokener interface {
 	Token() string
 }

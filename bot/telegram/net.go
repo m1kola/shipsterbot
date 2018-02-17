@@ -25,21 +25,25 @@ func ValidateWebhookPort(port string) error {
 	return err
 }
 
-// startWebhookServer starts a new http server for handling Telegram webhooks
-func startWebhookServer(port, TLSCertPath, TLSKeyPath string) error {
-	handler := incommingRequstLogger(http.DefaultServeMux)
-
+// newServerWithIncommingRequstLogger creates a new server struct
+// with an incomming request logger
+func newServerWithIncommingRequstLogger(port string, handler http.Handler) *http.Server {
+	newHandler := incommingRequstLogger(handler)
 	addr := fmt.Sprintf(":%s", port)
-	log.Printf("Start listening on %s", addr)
 
-	var err error
+	server := &http.Server{Addr: addr, Handler: newHandler}
+	return server
+}
+
+// listenAndServe makes the server start handling requests.
+// It serves TLS connectons, if paths for TLS cert and key are provided,
+// othervise it serves non-TLS connections
+func listenAndServe(server listenerAndServer, TLSCertPath, TLSKeyPath string) error {
 	if len(TLSCertPath) > 0 && len(TLSKeyPath) > 0 {
-		err = http.ListenAndServeTLS(addr, TLSCertPath, TLSKeyPath, handler)
-	} else {
-		err = http.ListenAndServe(addr, handler)
+		return server.ListenAndServeTLS(TLSCertPath, TLSKeyPath)
 	}
 
-	return err
+	return server.ListenAndServe()
 }
 
 func incommingRequstLogger(handler http.Handler) http.Handler {
