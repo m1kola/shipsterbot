@@ -2,6 +2,8 @@ package storage
 
 import "github.com/m1kola/shipsterbot/models"
 
+//go:generate mockgen -source=./interfaces.go -destination=../mocks/mock_storage.go -package=mocks DataStorageInterface
+
 // DataStorageInterface represents a struct that handles storage logic
 type DataStorageInterface interface {
 	AddUnfinishedCommand(command models.UnfinishedCommand) error

@@ -1,3 +1,6 @@
+// This file contains internal interfaces for vendor libraries
+// that do not provide own interfaces
+
 package telegram
 
 import (
