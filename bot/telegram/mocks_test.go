@@ -4,6 +4,10 @@ import (
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
+// TODO: Consider using gomock
+// In case of negative decision, mocks from the package "mocks"
+// need to be converted into simple stuct mocks or something else.
+
 type webhookListenerMock struct {
 	webhookListenerFunc func(pattern string) tgbotapi.UpdatesChannel
 }

@@ -51,7 +51,7 @@ var startTelegramBotCmd = &cobra.Command{
 		botApp := telegram.NewBotApp(
 			apiClient, storage,
 			port, TLSCertPath, TLSKeyPath)
-		err = botApp.Start()
+		err = telegram.StartBotApp(botApp)
 		if err != nil {
 			log.Fatal(err)
 		}
