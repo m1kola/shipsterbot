@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/m1kola/shipsterbot/models"
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
+
+	"github.com/m1kola/shipsterbot/models"
 )
 
 var errCommandIsNotSupported = handlerCanNotHandleError{

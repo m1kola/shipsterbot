@@ -38,7 +38,7 @@ func newServerWithIncommingRequstLogger(port string, handler http.Handler) *http
 // listenAndServe makes the server start handling requests.
 // It serves TLS connectons, if paths for TLS cert and key are provided,
 // othervise it serves non-TLS connections
-func listenAndServe(server listenerAndServer, TLSCertPath, TLSKeyPath string) error {
+var listenAndServe = func(server listenerAndServer, TLSCertPath, TLSKeyPath string) error {
 	if len(TLSCertPath) > 0 && len(TLSKeyPath) > 0 {
 		return server.ListenAndServeTLS(TLSCertPath, TLSKeyPath)
 	}
@@ -55,7 +55,7 @@ func incommingRequstLogger(handler http.Handler) http.Handler {
 
 // getUpdatesChan regesters a webhook handler
 // and return a channel for consuming updates
-func getUpdatesChan(bot tokenListenForWebhook) <-chan tgbotapi.Update {
+var getUpdatesChan = func(bot tokenListenForWebhook) <-chan tgbotapi.Update {
 	return bot.ListenForWebhook(
 		fmt.Sprintf("/%s/webhook", bot.Token()))
 }
