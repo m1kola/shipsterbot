@@ -4,9 +4,11 @@ import (
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
+var tgbotapiNewBotAPI = tgbotapi.NewBotAPI
+
 // NewAPIClient creates a new APIClientWrapper instance
 func NewAPIClient(token string) (*APIClient, error) {
-	client, err := tgbotapi.NewBotAPI(token)
+	client, err := tgbotapiNewBotAPI(token)
 	if err != nil {
 		return nil, err
 	}

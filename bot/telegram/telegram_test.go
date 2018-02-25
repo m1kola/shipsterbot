@@ -83,10 +83,6 @@ func TestStartBotApp(t *testing.T) {
 
 		err := StartBotApp(mockBotApp)
 
-		if err == nil {
-			t.Error("Expected error, got nil")
-		}
-
 		if err != expectedErr {
 			t.Errorf("Expected the %v error, got %v", expectedErr, err)
 		}
