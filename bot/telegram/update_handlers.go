@@ -169,7 +169,7 @@ func handleMessageText(bapp *BotApp, message *tgbotapi.Message) error {
 		errors.New("Unable to find a handler for the message")}
 }
 
-func _handleHelpMessage(bapp *BotApp, message *tgbotapi.Message, isStart bool) {
+func handleHelpMessage(bapp *BotApp, message *tgbotapi.Message, isStart bool) {
 	var greeting string
 	if isStart {
 		greeting = "Hi %s,"
@@ -196,7 +196,7 @@ You can control me by sending these commands:
 }
 
 func handleStart(bapp *BotApp, message *tgbotapi.Message) error {
-	_handleHelpMessage(bapp, message, true)
+	handleHelpMessage(bapp, message, true)
 	return nil
 }
 
@@ -207,7 +207,7 @@ func handleUnrecognisedMessage(bapp *BotApp, message *tgbotapi.Message) {
 		// Display help text only if we received
 		// a message text: we don't want to reply
 		// to service messages (people added or removed from the group, etc.)
-		_handleHelpMessage(bapp, message, false)
+		handleHelpMessage(bapp, message, false)
 	}
 }
 
