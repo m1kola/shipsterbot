@@ -45,7 +45,7 @@ func NewBotApp(
 // StartBotApp starts the  bot
 func StartBotApp(bapp *BotApp) error {
 	updates := getUpdatesChan(bapp.bot)
-	go handleUpdates(bapp, updates)
+	go handleUpdates(bapp.bot, bapp.storage, updates)
 
 	server := newServerWithIncommingRequstLogger(
 		bapp.serverConfig.port, http.DefaultServeMux)
