@@ -18,38 +18,40 @@ var errCommandIsNotSupported = handlerCanNotHandleError{
 // handleUpdates receives updates and starts goroutines to handle them
 func handleUpdates(bapp *BotApp, updates <-chan tgbotapi.Update) {
 	for update := range updates {
-		go func(update tgbotapi.Update) {
-			var err error
-			var message *tgbotapi.Message
+		go handleUpdate(bapp, update)
+	}
+}
 
-			if update.CallbackQuery != nil {
-				message = update.CallbackQuery.Message
+func handleUpdate(bapp *BotApp, update tgbotapi.Update) {
+	var err error
+	var message *tgbotapi.Message
 
-				err = handleCallbackQuery(bapp, update.CallbackQuery)
-			} else if update.Message != nil {
-				message = update.Message
+	if update.CallbackQuery != nil {
+		message = update.CallbackQuery.Message
 
-				err = handleMessage(bapp, message)
-			}
+		err = handleCallbackQuery(bapp, update.CallbackQuery)
+	} else if update.Message != nil {
+		message = update.Message
 
-			if err != nil {
-				log.Print(err)
+		err = handleMessage(bapp, message)
+	}
 
-				if _, ok := err.(handlerCanNotHandleError); ok {
-					// It's ok if we can't handle a message,
-					// because an user can send nonsense.
-					// Let's send a message saying that
-					// we don't understand the input.
-					handleUnrecognisedMessage(bapp, message)
-				} else {
-					// Other types of error mean that we are in trouble
-					// and we need to do something with it
-					text := "Sorry, but something went wrong. I'll inform developers about this issue. Please, try again a bit later."
-					msg := tgbotapi.NewMessage(message.Chat.ID, text)
-					bapp.bot.Send(msg)
-				}
-			}
-		}(update)
+	if err != nil {
+		log.Print(err)
+
+		if _, ok := err.(handlerCanNotHandleError); ok {
+			// It's ok if we can't handle a message,
+			// because an user can send nonsense.
+			// Let's send a message saying that
+			// we don't understand the input.
+			handleUnrecognisedMessage(bapp, message)
+		} else {
+			// Other types of error mean that we are in trouble
+			// and we need to do something with it
+			text := "Sorry, but something went wrong. I'll inform developers about this issue. Please, try again a bit later."
+			msg := tgbotapi.NewMessage(message.Chat.ID, text)
+			bapp.bot.Send(msg)
+		}
 	}
 }
 
