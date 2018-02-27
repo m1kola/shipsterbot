@@ -27,7 +27,7 @@ func handleUpdates(
 	}
 }
 
-func handleUpdate(
+var handleUpdate = func(
 	client botClientInterface,
 	st storage.DataStorageInterface,
 	update tgbotapi.Update,
