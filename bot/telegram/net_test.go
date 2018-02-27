@@ -9,7 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
+	"github.com/golang/mock/gomock"
+	"github.com/m1kola/shipsterbot/mocks/bot/mock_telegram"
 )
 
 func TestValidateWebhookPort(t *testing.T) {
@@ -51,76 +52,41 @@ func TestNewServerWithIncommingRequstLogger(t *testing.T) {
 
 func TestListenAndServe(t *testing.T) {
 	t.Run("TLS server", func(t *testing.T) {
-		isListenAndServeTLSCalled := false
-		isListenAndServeCalled := false
-		fakeServer := &listenerAndServerMock{
-			listenAndServeTLSFunc: func(certFile, keyFile string) error {
-				isListenAndServeTLSCalled = true
-				return nil
-			},
-			listenAndServeFunc: func() error {
-				isListenAndServeCalled = true
-				return nil
-			},
-		}
+		TLSCertPath, TLSKeyPath := "/test/cert.pem", "/test/cert.key"
 
-		listenAndServe(fakeServer, "/test/cert.pem", "/test/cert.key")
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
 
-		if !isListenAndServeTLSCalled {
-			t.Errorf("ListenAndServeLTS is expected to be called")
-		}
+		fakeServer := mock_telegram.NewMocklistenerAndServer(mockCtrl)
+		fakeServer.EXPECT().ListenAndServeTLS(TLSCertPath, TLSKeyPath)
 
-		if isListenAndServeCalled {
-			t.Errorf("ListenAndServe is not expected to be called")
-		}
+		listenAndServe(fakeServer, TLSCertPath, TLSKeyPath)
 	})
 	t.Run("Non-TLS server", func(t *testing.T) {
-		isListenAndServeTLSCalled := false
-		isListenAndServeCalled := false
-		fakeServer := &listenerAndServerMock{
-			listenAndServeTLSFunc: func(certFile, keyFile string) error {
-				isListenAndServeTLSCalled = true
-				return nil
-			},
-			listenAndServeFunc: func() error {
-				isListenAndServeCalled = true
-				return nil
-			},
-		}
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		fakeServer := mock_telegram.NewMocklistenerAndServer(mockCtrl)
+		fakeServer.EXPECT().ListenAndServe()
 
 		listenAndServe(fakeServer, "", "")
-
-		if !isListenAndServeCalled {
-			t.Errorf("ListenAndServe is expected to be called")
-		}
-
-		if isListenAndServeTLSCalled {
-			t.Errorf("ListenAndServeLTS is not expected to be called")
-		}
 	})
 }
 
 func TestGetUpdatesChan(t *testing.T) {
-	var actualPattern string
 	expectedPattern := "/123/webhook"
 
-	mock := &tokenListenForWebhookMock{
-		&webhookListenerMock{
-			webhookListenerFunc: func(pattern string) tgbotapi.UpdatesChannel {
-				actualPattern = pattern
-				return make(tgbotapi.UpdatesChannel)
-			},
-		},
-		&tokenerMock{
-			fakeToken: "123",
-		},
-	}
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
 
-	getUpdatesChan(mock)
+	mockObj := mock_telegram.NewMocktokenListenForWebhook(mockCtrl)
+	tokenCall := mockObj.EXPECT().Token()
+	tokenCall.Return("123")
 
-	if actualPattern != expectedPattern {
-		t.Errorf("%s expected, got %s", expectedPattern, actualPattern)
-	}
+	mockObj.EXPECT().ListenForWebhook(expectedPattern).After(tokenCall)
+
+	getUpdatesChan(mockObj)
+
 }
 
 func TestIncommingRequstLogger(t *testing.T) {
