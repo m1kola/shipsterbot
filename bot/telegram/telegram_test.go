@@ -5,17 +5,16 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 
-	"github.com/m1kola/shipsterbot/mocks"
+	"github.com/m1kola/shipsterbot/mocks/mock_storage"
 )
 
 func TestNewBotApp(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	storageMock := mocks.NewMockDataStorageInterface(mockCtrl)
+	storageMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
 	APIClientMock := &APIClient{}
 
 	expectedPort := "8443"
