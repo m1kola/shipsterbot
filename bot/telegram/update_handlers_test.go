@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/m1kola/shipsterbot/gomockhelpers"
 	"github.com/m1kola/shipsterbot/mocks/bot/mock_telegram"
 	"github.com/m1kola/shipsterbot/mocks/mock_storage"
 	"github.com/m1kola/shipsterbot/storage"
@@ -123,8 +124,14 @@ func TestHandleUpdate(t *testing.T) {
 		}
 
 		// Function mocks
-		// TODO: Check that we are sending a message into the right chat
-		clientMock.EXPECT().Send(gomock.Any())
+		sendMsgMatcher := gomockhelpers.MatcherFunc(func(x interface{}) bool {
+			if m, ok := x.(tgbotapi.MessageConfig); ok {
+				return m.ChatID == messageMock.Chat.ID
+			}
+
+			return false
+		})
+		clientMock.EXPECT().Send(sendMsgMatcher)
 
 		handleCallbackQueryIsCalled := false
 		handleCallbackQueryOld := handleCallbackQuery
@@ -161,8 +168,14 @@ func TestHandleUpdate(t *testing.T) {
 		}
 
 		// Function mocks
-		// TODO: Check that we are sending a message into the right chat
-		clientMock.EXPECT().Send(gomock.Any())
+		sendMsgMatcher := gomockhelpers.MatcherFunc(func(x interface{}) bool {
+			if m, ok := x.(tgbotapi.MessageConfig); ok {
+				return m.ChatID == messageMock.Chat.ID
+			}
+
+			return false
+		})
+		clientMock.EXPECT().Send(sendMsgMatcher)
 
 		handleMessageIsCalled := false
 		handleMessageOld := handleMessage
