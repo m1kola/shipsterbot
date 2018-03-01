@@ -13,8 +13,8 @@ import (
 	"github.com/m1kola/shipsterbot/storage"
 )
 
-var errCommandIsNotSupported = handlerCanNotHandleError{
-	errors.New("Unable to find a handler for a command")}
+// TODO: split file: define functions that route update separately
+// 					 from functions that actually handle something
 
 // handleUpdates receives updates and starts goroutines to handle them
 func handleUpdates(
