@@ -66,7 +66,7 @@ var handleUpdate = func(
 
 // handleCallbackQuery handles user's interactions with the client's UI
 // User can interaction with a bot using an inline keyboard, for example
-func handleCallbackQuery(
+var handleCallbackQuery = func(
 	client botClientInterface,
 	st storage.DataStorageInterface,
 	callbackQuery *tgbotapi.CallbackQuery,
@@ -99,7 +99,7 @@ func handleCallbackQuery(
 // handleMessage handles messages.
 // Messages can contain entities in some cases (commands, mentions, etc),
 // but can also be plain text messages.
-func handleMessage(
+var handleMessage = func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -227,7 +227,7 @@ func handleStart(client sender, message *tgbotapi.Message) error {
 	return nil
 }
 
-func handleUnrecognisedMessage(client sender, message *tgbotapi.Message) {
+var handleUnrecognisedMessage = func(client sender, message *tgbotapi.Message) {
 	if len(message.Text) > 0 {
 		log.Print("No supported bot commands found")
 
