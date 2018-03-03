@@ -143,7 +143,11 @@ var routeMessageEntities = func(
 			errors.New("Message doesn't have entities to handle")}
 	}
 
+	// TODO: Define a map of command names and their handlers.
+	// 		 Also would be great to have a map of commands names
+	//       and their descriptions to use it in handleHelpMessage
 	botCommand := message.Command()
+	log.Print("aaaa ", botCommand)
 	switch botCommand {
 	case "help", "start":
 		return handleStart(client, message)

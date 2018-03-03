@@ -37,7 +37,7 @@ You can control me by sending these commands:
 	client.Send(msg)
 }
 
-func handleStart(client sender, message *tgbotapi.Message) error {
+var handleStart = func(client sender, message *tgbotapi.Message) error {
 	handleHelpMessage(client, message, true)
 	return nil
 }
@@ -67,7 +67,7 @@ var handleUnrecoverableError = func(
 	client.Send(msg)
 }
 
-func handleAdd(
+var handleAdd = func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -115,7 +115,7 @@ func handleAdd(
 	return nil
 }
 
-func handleList(
+var handleList = func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -182,7 +182,7 @@ func handleAddSession(
 	return nil
 }
 
-func handleDel(
+var handleDel = func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -286,7 +286,7 @@ var handleDelCallbackQuery = func(
 	return nil
 }
 
-func handleClear(
+var handleClear = func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,

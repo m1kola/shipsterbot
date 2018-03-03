@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -391,7 +392,7 @@ func TestRouteCallbackQuery(t *testing.T) {
 }
 
 func TestRouteMessage(t *testing.T) {
-	// Mock factories
+	// Mock setup funcs
 	var routeMessageEntitiesMockSetup = func(errMock error) func() {
 		routeMessageEntitiesOld := routeMessageEntities
 		tearDownFunc := func() { routeMessageEntities = routeMessageEntitiesOld }
@@ -483,5 +484,171 @@ func TestRouteMessage(t *testing.T) {
 		if errFromrouteMessageTextMock != err {
 			t.Fatalf("Expected %#v, got %#v", errFromrouteMessageTextMock, err)
 		}
+	})
+}
+
+func TestRouteMessageEntities(t *testing.T) {
+	// Mock setup funcs
+	var messageMockSetup = func(command string) *tgbotapi.Message {
+		commandWithSlash := fmt.Sprintf("/%s", command)
+		message := &tgbotapi.Message{
+			Entities: &[]tgbotapi.MessageEntity{
+				tgbotapi.MessageEntity{
+					Type:   "bot_command",
+					Offset: 0,
+					Length: len(commandWithSlash),
+				},
+			},
+			Text: commandWithSlash,
+		}
+
+		return message
+	}
+
+	// Common interface mocks
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	clientMock := mock_telegram.NewMockbotClientInterface(mockCtrl)
+	stMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
+
+	t.Run("Empty message Entities", func(t *testing.T) {
+		// Data mocks
+		messageMock := &tgbotapi.Message{}
+
+		err := routeMessageEntities(clientMock, stMock, messageMock)
+		if _, ok := err.(handlerCanNotHandleError); !ok {
+			t.Fatalf("Expected error of type %T, got %T",
+				handlerCanNotHandleError{}, err)
+		}
+	})
+
+	t.Run("Commands", func(t *testing.T) {
+
+		// TODO: Check if there a better way to if there a better way to mock funcs
+		//       I tried to define a type for *func(sender, storage.DataStorageInterface, *tgbotapi.Message) error
+		//       and override hander funcs dynamically, but it doesn't work.
+		//       This definitely can be ahived by an interface, but it seems
+		//       unnecessary to define sturct for each andler...
+		//       But something like HandlerFunc from the net package should work
+
+		t.Run("Supported command", func(t *testing.T) {
+			t.Run("start and help", func(t *testing.T) {
+				// Data mocks
+				errMock := errors.New("Error from start or help")
+
+				// Function mocks
+				handlerFuncOld := handleStart
+				defer func() { handleStart = handlerFuncOld }()
+				handleStart = func(_ sender, _ *tgbotapi.Message) error {
+					return errMock
+				}
+
+				t.Run("help", func(t *testing.T) {
+					messageMock := messageMockSetup("help")
+					err := routeMessageEntities(clientMock, stMock, messageMock)
+
+					if errMock != err {
+						t.Errorf("Expected %#v, got %#v", errMock, err)
+					}
+				})
+
+				t.Run("start", func(t *testing.T) {
+					messageMock := messageMockSetup("start")
+					err := routeMessageEntities(clientMock, stMock, messageMock)
+
+					if errMock != err {
+						t.Errorf("Expected %#v, got %#v", errMock, err)
+					}
+				})
+			})
+
+			t.Run("add", func(t *testing.T) {
+				// Data mocks
+				errMock := errors.New("Error from add")
+				messageMock := messageMockSetup("add")
+
+				// Function mocks
+				handlerFuncOld := handleAdd
+				defer func() { handleAdd = handlerFuncOld }()
+				handleAdd = func(_ sender, _ storage.DataStorageInterface, _ *tgbotapi.Message) error {
+					return errMock
+				}
+
+				err := routeMessageEntities(clientMock, stMock, messageMock)
+
+				if errMock != err {
+					t.Errorf("Expected %#v, got %#v", errMock, err)
+				}
+			})
+
+			t.Run("list", func(t *testing.T) {
+				// Data mocks
+				errMock := errors.New("Error from list")
+				messageMock := messageMockSetup("list")
+
+				// Function mocks
+				handlerFuncOld := handleList
+				defer func() { handleList = handlerFuncOld }()
+				handleList = func(_ sender, _ storage.DataStorageInterface, _ *tgbotapi.Message) error {
+					return errMock
+				}
+
+				err := routeMessageEntities(clientMock, stMock, messageMock)
+
+				if errMock != err {
+					t.Errorf("Expected %#v, got %#v", errMock, err)
+				}
+			})
+
+			t.Run("del", func(t *testing.T) {
+				// Data mocks
+				errMock := errors.New("Error from del")
+				messageMock := messageMockSetup("del")
+
+				// Function mocks
+				handlerFuncOld := handleDel
+				defer func() { handleDel = handlerFuncOld }()
+				handleDel = func(_ sender, _ storage.DataStorageInterface, _ *tgbotapi.Message) error {
+					return errMock
+				}
+
+				err := routeMessageEntities(clientMock, stMock, messageMock)
+
+				if errMock != err {
+					t.Errorf("Expected %#v, got %#v", errMock, err)
+				}
+			})
+
+			t.Run("clear", func(t *testing.T) {
+				// Data mocks
+				errMock := errors.New("Error from clear")
+				messageMock := messageMockSetup("clear")
+
+				// Function mocks
+				handlerFuncOld := handleClear
+				defer func() { handleClear = handlerFuncOld }()
+				handleClear = func(_ sender, _ storage.DataStorageInterface, _ *tgbotapi.Message) error {
+					return errMock
+				}
+
+				err := routeMessageEntities(clientMock, stMock, messageMock)
+
+				if errMock != err {
+					t.Errorf("Expected %#v, got %#v", errMock, err)
+				}
+			})
+		})
+
+		t.Run("Not supported command", func(t *testing.T) {
+			command := "/invalid_command"
+
+			// Data mocks
+			messageMock := messageMockSetup(command)
+
+			err := routeMessageEntities(clientMock, stMock, messageMock)
+			if errCommandIsNotSupported != err {
+				t.Fatalf("Expected %#v, got %#v", errCommandIsNotSupported, err)
+			}
+		})
 	})
 }
