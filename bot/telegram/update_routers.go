@@ -42,24 +42,37 @@ var routeUpdate = func(
 		err = routeMessage(client, st, message)
 	}
 
-	// TODO: Move into a separate function
 	if err != nil {
-		log.Print(err)
-
-		if _, ok := err.(handlerCanNotHandleError); ok {
-			// It's ok if we can't handle a message,
-			// because an user can send nonsense.
-			// Let's send a message saying that
-			// we don't understand the input.
-			handleUnrecognisedMessage(client, message)
-		} else {
-			// Other types of error mean that we are in trouble
-			// and we need to do something with it
-			text := "Sorry, but something went wrong. I'll inform developers about this issue. Please, try again a bit later."
-			msg := tgbotapi.NewMessage(message.Chat.ID, text)
-			client.Send(msg)
-		}
+		routeErrors(client, message, err)
 	}
+}
+
+// TODO: Move tests that cover this func from TestRouteUpdate
+// routeErrors handles errors that occur during user interactions with the bot
+var routeErrors = func(
+	client botClientInterface,
+	message *tgbotapi.Message,
+	err error,
+) {
+	if err == nil {
+		// It's not our business
+		return
+	}
+
+	log.Print(err)
+
+	// It's ok if we can't handle a message,
+	// because an user can send nonsense.
+	// Let's send a message saying that
+	// we don't understand the input.
+	if _, ok := err.(handlerCanNotHandleError); ok {
+		handleUnrecognisedMessage(client, message)
+		return
+	}
+
+	// Other types of error mean that we are in trouble
+	// and we need to do something with it
+	handleUnrecoverableError(client, message.Chat.ID, err)
 }
 
 // routeCallbackQuery routes callback queries to specific handlers

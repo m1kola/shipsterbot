@@ -53,6 +53,20 @@ var handleUnrecognisedMessage = func(client sender, message *tgbotapi.Message) {
 	}
 }
 
+// handleUnrecoverableError sends the "something went wrong" message to a chat
+//
+// TODO: We should actually have notifications about errors at some point
+// 		 See: https://github.com/m1kola/shipsterbot/issues/27
+func handleUnrecoverableError(
+	client botClientInterface,
+	chatID int64,
+	_ error,
+) {
+	text := "Sorry, but something went wrong. I'll inform developers about this issue. Please, try again a bit later."
+	msg := tgbotapi.NewMessage(chatID, text)
+	client.Send(msg)
+}
+
 func handleAdd(
 	client sender,
 	st storage.DataStorageInterface,
