@@ -47,7 +47,6 @@ var routeUpdate = func(
 	}
 }
 
-// TODO: Move tests that cover this func from TestRouteUpdate
 // routeErrors handles errors that occur during user interactions with the bot
 var routeErrors = func(
 	client botClientInterface,

@@ -57,7 +57,7 @@ var handleUnrecognisedMessage = func(client sender, message *tgbotapi.Message) {
 //
 // TODO: We should actually have notifications about errors at some point
 // 		 See: https://github.com/m1kola/shipsterbot/issues/27
-func handleUnrecoverableError(
+var handleUnrecoverableError = func(
 	client botClientInterface,
 	chatID int64,
 	_ error,
