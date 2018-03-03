@@ -85,7 +85,7 @@ var routeCallbackQuery = func(
 	botCommand, payload, err := splitCallbackQueryData(callbackQuery.Data)
 	if err != nil {
 		return handlerCanNotHandleError{
-			fmt.Errorf("CallbackQuery error: %s", err)}
+			fmt.Errorf("CallbackQuery data error: %s", err)}
 	}
 
 	// TODO: Define callback name constants, so we can use them here and in handlers

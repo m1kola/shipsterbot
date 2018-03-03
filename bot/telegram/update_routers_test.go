@@ -286,3 +286,106 @@ func TestRouteErrors(t *testing.T) {
 		}
 	})
 }
+
+func TestRouteCallbackQuery(t *testing.T) {
+	// Interface mocks
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	clientMock := mock_telegram.NewMockbotClientInterface(mockCtrl)
+	stMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
+
+	t.Run("Commands", func(t *testing.T) {
+
+		t.Run("Del command", func(t *testing.T) {
+			// Data mocks
+			expectedPayload := "123"
+			callbackQueryMock := &tgbotapi.CallbackQuery{
+				Data: "del:123",
+			}
+			errMock := errors.New("Fake error")
+
+			// Function mocks
+			handleDelCallbackQueryOld := handleDelCallbackQuery
+			defer func() { handleDelCallbackQuery = handleDelCallbackQueryOld }()
+			handleDelCallbackQuery = func(
+				_ botClientInterface,
+				_ storage.DataStorageInterface,
+				callbackQuery *tgbotapi.CallbackQuery,
+				payload string,
+			) error {
+				if callbackQueryMock != callbackQuery {
+					t.Error("Unexpected callbackQuery")
+				}
+
+				if expectedPayload != payload {
+					t.Errorf("Expected paylod %#v, got %#v",
+						expectedPayload, payload)
+				}
+				return errMock
+			}
+
+			err := routeCallbackQuery(clientMock, stMock, callbackQueryMock)
+			if errMock != err {
+				t.Fatalf("Expected the %#v error, got %#v", errMock, err)
+			}
+		})
+
+		t.Run("Clear command", func(t *testing.T) {
+			// Data mocks
+			expectedPayload := "123"
+			callbackQueryMock := &tgbotapi.CallbackQuery{
+				Data: "clear:123",
+			}
+			errMock := errors.New("Fake error")
+
+			// Function mocks
+			handleClearCallbackQueryOld := handleClearCallbackQuery
+			defer func() { handleClearCallbackQuery = handleClearCallbackQueryOld }()
+			handleClearCallbackQuery = func(
+				_ botClientInterface,
+				_ storage.DataStorageInterface,
+				callbackQuery *tgbotapi.CallbackQuery,
+				payload string,
+			) error {
+				if callbackQueryMock != callbackQuery {
+					t.Error("Unexpected callbackQuery")
+				}
+
+				if expectedPayload != payload {
+					t.Errorf("Expected paylod %#v, got %#v",
+						expectedPayload, payload)
+				}
+				return errMock
+			}
+
+			err := routeCallbackQuery(clientMock, stMock, callbackQueryMock)
+			if errMock != err {
+				t.Fatalf("Expected the %#v error, got %#v", errMock, err)
+			}
+		})
+
+		t.Run("Unknown command", func(t *testing.T) {
+			// Data mocks
+			callbackQueryMock := &tgbotapi.CallbackQuery{
+				Data: "valid_but_unknown_command_name:123",
+			}
+
+			err := routeCallbackQuery(clientMock, stMock, callbackQueryMock)
+			if _, ok := err.(handlerCanNotHandleError); !ok {
+				t.Fatalf("expected %T got %T", handlerCanNotHandleError{}, err)
+			}
+		})
+	})
+
+	t.Run("Callback data error", func(t *testing.T) {
+		// Data mocks
+		callbackQueryMock := &tgbotapi.CallbackQuery{
+			Data: "invalid_data",
+		}
+
+		err := routeCallbackQuery(clientMock, stMock, callbackQueryMock)
+		if _, ok := err.(handlerCanNotHandleError); !ok {
+			t.Fatalf("expected %T got %T", handlerCanNotHandleError{}, err)
+		}
+	})
+}

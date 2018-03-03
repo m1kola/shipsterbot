@@ -223,7 +223,7 @@ func handleDel(
 	return nil
 }
 
-func handleDelCallbackQuery(
+var handleDelCallbackQuery = func(
 	client botClientInterface,
 	st storage.DataStorageInterface,
 	callbackQuery *tgbotapi.CallbackQuery,
@@ -326,7 +326,7 @@ func handleClear(
 	return nil
 }
 
-func handleClearCallbackQuery(
+var handleClearCallbackQuery = func(
 	client botClientInterface,
 	st storage.DataStorageInterface,
 	callbackQuery *tgbotapi.CallbackQuery,
