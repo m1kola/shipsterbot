@@ -115,17 +115,17 @@ var routeMessage = func(
 	err := routeMessageEntities(client, st, message)
 	// We should only try to continue processing an message,
 	// if we receive an handlerCanNotHandleError error.
-	if _, ok := err.(handlerCanNotHandleError); ok {
-		// But it doesn't make sense to continue if it's
-		// an errCommandIsNotSupported error
-		if err == errCommandIsNotSupported {
-			return err
-		}
-
-		return routeMessageText(client, st, message)
+	if _, ok := err.(handlerCanNotHandleError); !ok {
+		return err
 	}
 
-	return err
+	// But it doesn't make sense to continue, if it's
+	// the errCommandIsNotSupported error
+	if err == errCommandIsNotSupported {
+		return err
+	}
+
+	return routeMessageText(client, st, message)
 }
 
 // routeMessageEntities routes message to a specific handler
