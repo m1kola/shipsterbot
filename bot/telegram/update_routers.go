@@ -12,18 +12,19 @@ import (
 	"github.com/m1kola/shipsterbot/storage"
 )
 
-// handleUpdates receives updates and starts goroutines to handle them
-func handleUpdates(
+// routeUpdates receives updates and starts goroutines to route them
+func routeUpdates(
 	client botClientInterface,
 	st storage.DataStorageInterface,
 	updates <-chan tgbotapi.Update,
 ) {
 	for update := range updates {
-		go handleUpdate(client, st, update)
+		go routeUpdate(client, st, update)
 	}
 }
 
-var handleUpdate = func(
+// routeUpdate routes a specific update update handlers
+var routeUpdate = func(
 	client botClientInterface,
 	st storage.DataStorageInterface,
 	update tgbotapi.Update,
@@ -34,13 +35,14 @@ var handleUpdate = func(
 	if update.CallbackQuery != nil {
 		message = update.CallbackQuery.Message
 
-		err = handleCallbackQuery(client, st, update.CallbackQuery)
+		err = routeCallbackQuery(client, st, update.CallbackQuery)
 	} else if update.Message != nil {
 		message = update.Message
 
-		err = handleMessage(client, st, message)
+		err = routeMessage(client, st, message)
 	}
 
+	// TODO: Move into a separate function
 	if err != nil {
 		log.Print(err)
 
@@ -60,9 +62,11 @@ var handleUpdate = func(
 	}
 }
 
-// handleCallbackQuery handles user's interactions with the client's UI
-// User can interaction with a bot using an inline keyboard, for example
-var handleCallbackQuery = func(
+// routeCallbackQuery routes callback queries to specific handlers
+//
+// CallbackQuery can be produced by an user  when they interact
+// with the chat client UI (for example, using an inline keyboard)
+var routeCallbackQuery = func(
 	client botClientInterface,
 	st storage.DataStorageInterface,
 	callbackQuery *tgbotapi.CallbackQuery,
@@ -92,17 +96,18 @@ var handleCallbackQuery = func(
 			callbackQuery.Data)}
 }
 
-// handleMessage handles messages.
+// routeMessage routes text messages
+//
 // Messages can contain entities in some cases (commands, mentions, etc),
-// but can also be plain text messages.
-var handleMessage = func(
+// which should be handled separately
+var routeMessage = func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
 ) error {
 	log.Printf("Message received: \"%s\"", message.Text)
 
-	err := handleMessageEntities(client, st, message)
+	err := routeMessageEntities(client, st, message)
 	// We should only try to continue processing an message,
 	// if we receive an handlerCanNotHandleError error.
 	if _, ok := err.(handlerCanNotHandleError); ok {
@@ -112,14 +117,18 @@ var handleMessage = func(
 			return err
 		}
 
-		return handleMessageText(client, st, message)
+		return routeMessageText(client, st, message)
 	}
 
 	return err
 }
 
-// handleMessageEntities handles entities form a message
-func handleMessageEntities(
+// routeMessageEntities routes message to a specific handler
+//
+// Currently we are only interested in commands, but it's possible to
+// receive mentions and orher entities.
+// Everything other than command need to be ignored
+func routeMessageEntities(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -146,11 +155,13 @@ func handleMessageEntities(
 	return errCommandIsNotSupported
 }
 
-// handleMessageText handles text from a message.
+// routeMessageText routes messages to a specific handler
+// based a current UnfinishedCommand for a specific user in a specific chat
+//
 // Normally we listen to user's text commands or inline keyboard,
 // but in some cases we need to handle message text.
-// For example, when user asks us to add an item into the shopping list.
-func handleMessageText(
+// For example, when user asks us to add an item into the shopping list
+func routeMessageText(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,

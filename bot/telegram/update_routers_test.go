@@ -12,7 +12,7 @@ import (
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
-func TestHandleUpdates(t *testing.T) {
+func TestRouteUpdates(t *testing.T) {
 	// Interface mocks
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -20,27 +20,27 @@ func TestHandleUpdates(t *testing.T) {
 	stMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
 
 	// Function mocks
-	isHandleUpdateCalled := make(chan bool)
-	oldHandleUpdate := handleUpdate
-	defer func() { handleUpdate = oldHandleUpdate }()
-	handleUpdate = func(
+	routeUpdateIsCalled := make(chan bool)
+	routeUpdateOld := routeUpdate
+	defer func() { routeUpdate = routeUpdateOld }()
+	routeUpdate = func(
 		botClientInterface, storage.DataStorageInterface, tgbotapi.Update,
 	) {
-		isHandleUpdateCalled <- true
+		routeUpdateIsCalled <- true
 	}
 
 	updates := make(chan tgbotapi.Update)
 	defer close(updates)
 
-	go handleUpdates(clientMock, stMock, updates)
+	go routeUpdates(clientMock, stMock, updates)
 
 	updates <- tgbotapi.Update{}
-	if !<-isHandleUpdateCalled {
-		t.Error("The handleUpdate func wasn't called")
+	if !<-routeUpdateIsCalled {
+		t.Error("The routeUpdate func wasn't called")
 	}
 }
 
-func TestHandleUpdate(t *testing.T) {
+func TestRouteUpdate(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -55,15 +55,15 @@ func TestHandleUpdate(t *testing.T) {
 		}
 
 		// Function mocks
-		handleCallbackQueryIsCalled := false
-		handleCallbackQueryOld := handleCallbackQuery
-		defer func() { handleCallbackQuery = handleCallbackQueryOld }()
-		handleCallbackQuery = func(
+		routeCallbackQueryIsCalled := false
+		routeCallbackQueryOld := routeCallbackQuery
+		defer func() { routeCallbackQuery = routeCallbackQueryOld }()
+		routeCallbackQuery = func(
 			_ botClientInterface,
 			_ storage.DataStorageInterface,
 			callbackQuery *tgbotapi.CallbackQuery,
 		) error {
-			handleCallbackQueryIsCalled = true
+			routeCallbackQueryIsCalled = true
 			if callbackQueryMock != callbackQuery {
 				t.Error("Wrong CallbackQuery received")
 			}
@@ -71,9 +71,9 @@ func TestHandleUpdate(t *testing.T) {
 			return nil
 		}
 
-		handleUpdate(clientMock, stMock, updateMock)
+		routeUpdate(clientMock, stMock, updateMock)
 
-		if !handleCallbackQueryIsCalled {
+		if !routeCallbackQueryIsCalled {
 			t.Error("func handleCallbackQuery wasn't called")
 		}
 	})
@@ -86,15 +86,15 @@ func TestHandleUpdate(t *testing.T) {
 		}
 
 		// Function mocks
-		handleMessageIsCalled := false
-		handleMessageOld := handleMessage
-		defer func() { handleMessage = handleMessageOld }()
-		handleMessage = func(
+		routeMessageIsCalled := false
+		routeMessageOld := routeMessage
+		defer func() { routeMessage = routeMessageOld }()
+		routeMessage = func(
 			_ sender,
 			_ storage.DataStorageInterface,
 			message *tgbotapi.Message,
 		) error {
-			handleMessageIsCalled = true
+			routeMessageIsCalled = true
 			if message != messageMock {
 				t.Error("Wrong Message received")
 			}
@@ -102,9 +102,9 @@ func TestHandleUpdate(t *testing.T) {
 			return nil
 		}
 
-		handleUpdate(clientMock, stMock, updateMock)
+		routeUpdate(clientMock, stMock, updateMock)
 
-		if !handleMessageIsCalled {
+		if !routeMessageIsCalled {
 			t.Error("func handleCallbackQuery wasn't called")
 		}
 	})
@@ -120,15 +120,15 @@ func TestHandleUpdate(t *testing.T) {
 		}
 
 		// Function mocks
-		handleCallbackQueryIsCalled := false
-		handleCallbackQueryOld := handleCallbackQuery
-		defer func() { handleCallbackQuery = handleCallbackQueryOld }()
-		handleCallbackQuery = func(
+		routeCallbackQueryIsCalled := false
+		routeCallbackQueryOld := routeCallbackQuery
+		defer func() { routeCallbackQuery = routeCallbackQueryOld }()
+		routeCallbackQuery = func(
 			_ botClientInterface,
 			_ storage.DataStorageInterface,
 			callbackQuery *tgbotapi.CallbackQuery,
 		) error {
-			handleCallbackQueryIsCalled = true
+			routeCallbackQueryIsCalled = true
 			if callbackQueryMock != callbackQuery {
 				t.Error("Wrong CallbackQuery received")
 			}
@@ -146,9 +146,9 @@ func TestHandleUpdate(t *testing.T) {
 			}
 		}
 
-		handleUpdate(clientMock, stMock, updateMock)
+		routeUpdate(clientMock, stMock, updateMock)
 
-		if !handleCallbackQueryIsCalled {
+		if !routeCallbackQueryIsCalled {
 			t.Error("func handleCallbackQuery wasn't called")
 		}
 		if !handleUnrecognisedMessageIsCalled {
@@ -169,15 +169,15 @@ func TestHandleUpdate(t *testing.T) {
 		}
 
 		// Function mocks
-		handleMessageIsCalled := false
-		handleMessageOld := handleMessage
-		defer func() { handleMessage = handleMessageOld }()
-		handleMessage = func(
+		routeMessageIsCalled := false
+		routeMessageOld := routeMessage
+		defer func() { routeMessage = routeMessageOld }()
+		routeMessage = func(
 			_ sender,
 			_ storage.DataStorageInterface,
 			message *tgbotapi.Message,
 		) error {
-			handleMessageIsCalled = true
+			routeMessageIsCalled = true
 			if message != messageMock {
 				t.Error("Wrong Message received")
 			}
@@ -195,9 +195,9 @@ func TestHandleUpdate(t *testing.T) {
 			}
 		}
 
-		handleUpdate(clientMock, stMock, updateMock)
+		routeUpdate(clientMock, stMock, updateMock)
 
-		if !handleMessageIsCalled {
+		if !routeMessageIsCalled {
 			t.Error("func handleCallbackQuery wasn't called")
 		}
 		if !handleUnrecognisedMessageIsCalled {
@@ -229,15 +229,15 @@ func TestHandleUpdate(t *testing.T) {
 		})
 		clientMock.EXPECT().Send(sendMsgMatcher)
 
-		handleCallbackQueryIsCalled := false
-		handleCallbackQueryOld := handleCallbackQuery
-		defer func() { handleCallbackQuery = handleCallbackQueryOld }()
-		handleCallbackQuery = func(
+		routeCallbackQueryIsCalled := false
+		routeCallbackQueryOld := routeCallbackQuery
+		defer func() { routeCallbackQuery = routeCallbackQueryOld }()
+		routeCallbackQuery = func(
 			_ botClientInterface,
 			_ storage.DataStorageInterface,
 			callbackQuery *tgbotapi.CallbackQuery,
 		) error {
-			handleCallbackQueryIsCalled = true
+			routeCallbackQueryIsCalled = true
 			if callbackQueryMock != callbackQuery {
 				t.Error("Wrong CallbackQuery received")
 			}
@@ -245,9 +245,9 @@ func TestHandleUpdate(t *testing.T) {
 			return errors.New("Fake error")
 		}
 
-		handleUpdate(clientMock, stMock, updateMock)
+		routeUpdate(clientMock, stMock, updateMock)
 
-		if !handleCallbackQueryIsCalled {
+		if !routeCallbackQueryIsCalled {
 			t.Error("func handleCallbackQuery wasn't called")
 		}
 	})
@@ -273,15 +273,15 @@ func TestHandleUpdate(t *testing.T) {
 		})
 		clientMock.EXPECT().Send(sendMsgMatcher)
 
-		handleMessageIsCalled := false
-		handleMessageOld := handleMessage
-		defer func() { handleMessage = handleMessageOld }()
-		handleMessage = func(
+		routeMessageIsCalled := false
+		routeMessageOld := routeMessage
+		defer func() { routeMessage = routeMessageOld }()
+		routeMessage = func(
 			_ sender,
 			_ storage.DataStorageInterface,
 			message *tgbotapi.Message,
 		) error {
-			handleMessageIsCalled = true
+			routeMessageIsCalled = true
 			if message != messageMock {
 				t.Error("Wrong Message received")
 			}
@@ -289,9 +289,9 @@ func TestHandleUpdate(t *testing.T) {
 			return errors.New("Fake error")
 		}
 
-		handleUpdate(clientMock, stMock, updateMock)
+		routeUpdate(clientMock, stMock, updateMock)
 
-		if !handleMessageIsCalled {
+		if !routeMessageIsCalled {
 			t.Error("func handleCallbackQuery wasn't called")
 		}
 	})
