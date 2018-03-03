@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 
@@ -88,19 +87,18 @@ var routeCallbackQuery = func(
 			errors.New("Empty data in the CallbackQuery")}
 	}
 
-	dataPieces := strings.SplitN(callbackQuery.Data, ":", 2)
-	if len(dataPieces) != 2 {
+	botCommand, payload, err := splitCallbackQueryData(callbackQuery.Data)
+	if err != nil {
 		return handlerCanNotHandleError{
-			fmt.Errorf("Wrong data format in the CallbackQuery: %v",
-				callbackQuery.Data)}
+			fmt.Errorf("CallbackQuery error: %s", err)}
 	}
 
-	botCommand := dataPieces[0]
+	// TODO: Define callback name constants, so we can use them here and in handlers
 	switch botCommand {
 	case "del":
-		return handleDelCallbackQuery(client, st, callbackQuery, dataPieces[1])
+		return handleDelCallbackQuery(client, st, callbackQuery, payload)
 	case "clear":
-		return handleClearCallbackQuery(client, st, callbackQuery, dataPieces[1])
+		return handleClearCallbackQuery(client, st, callbackQuery, payload)
 	}
 
 	return handlerCanNotHandleError{

@@ -203,7 +203,8 @@ func handleDel(
 		text = "Your shopping list is empty. No need to delete items 🙂"
 	} else {
 		for _, item := range chatItems {
-			callbackData := fmt.Sprintf("del:%s", strconv.FormatInt(item.ID, 10))
+			callbackData := joinCallbackQueryData(
+				"del", strconv.FormatInt(item.ID, 10))
 			itemButtonRow := tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(item.Name, callbackData))
 			itemButtonRows = append(itemButtonRows, itemButtonRow)
@@ -312,10 +313,14 @@ func handleClear(
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	if !isEmpty {
+		const botCommand = "clear"
+		yesCallbackData := joinCallbackQueryData(botCommand, "1")
+		cancelCallbackData := joinCallbackQueryData(botCommand, "0")
+
 		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 			[]tgbotapi.InlineKeyboardButton{
-				tgbotapi.NewInlineKeyboardButtonData("Yes", "clear:1"),
-				tgbotapi.NewInlineKeyboardButtonData("Cancel", "clear:0")})
+				tgbotapi.NewInlineKeyboardButtonData("Yes", yesCallbackData),
+				tgbotapi.NewInlineKeyboardButtonData("Cancel", cancelCallbackData)})
 	}
 	client.Send(msg)
 	return nil
