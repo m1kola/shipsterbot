@@ -133,7 +133,7 @@ var routeMessage = func(
 // Currently we are only interested in commands, but it's possible to
 // receive mentions and orher entities.
 // Everything other than command need to be ignored
-func routeMessageEntities(
+var routeMessageEntities = func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -166,7 +166,7 @@ func routeMessageEntities(
 // Normally we listen to user's text commands or inline keyboard,
 // but in some cases we need to handle message text.
 // For example, when user asks us to add an item into the shopping list
-func routeMessageText(
+var routeMessageText = func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,

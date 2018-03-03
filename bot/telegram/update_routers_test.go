@@ -389,3 +389,99 @@ func TestRouteCallbackQuery(t *testing.T) {
 		}
 	})
 }
+
+func TestRouteMessage(t *testing.T) {
+	// Mock factories
+	var routeMessageEntitiesMockSetup = func(errMock error) func() {
+		routeMessageEntitiesOld := routeMessageEntities
+		tearDownFunc := func() { routeMessageEntities = routeMessageEntitiesOld }
+
+		routeMessageEntities = func(
+			_ sender,
+			_ storage.DataStorageInterface,
+			_ *tgbotapi.Message,
+		) error {
+			return errMock
+		}
+
+		return tearDownFunc
+	}
+
+	// Common interface mocks
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	clientMock := mock_telegram.NewMockbotClientInterface(mockCtrl)
+	stMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
+
+	// Comon data mocks
+	messageMock := &tgbotapi.Message{}
+
+	t.Run("Proxy errors from routeMessageEntities", func(t *testing.T) {
+
+		t.Run("handlerCanNotHandleError", func(t *testing.T) {
+			// Sould expect an error from routeMessageText
+
+			t.Run("errCommandIsNotSupported", func(t *testing.T) {
+				// Function mocks
+				tearDownFunc := routeMessageEntitiesMockSetup(
+					errCommandIsNotSupported,
+				)
+				defer tearDownFunc()
+
+				err := routeMessage(clientMock, stMock, messageMock)
+
+				if errCommandIsNotSupported != err {
+					t.Errorf("Expected %#v, got %#v",
+						errCommandIsNotSupported, err)
+				}
+			})
+		})
+
+		t.Run("Non-handlerCanNotHandleError", func(t *testing.T) {
+			// Data mocks
+			errMock := errors.New("Fake error")
+
+			// Function mocks
+			tearDownFunc := routeMessageEntitiesMockSetup(errMock)
+			defer tearDownFunc()
+
+			err := routeMessage(clientMock, stMock, messageMock)
+
+			if errMock != err {
+				t.Errorf("Expected %#v, got %#v", errMock, err)
+			}
+		})
+	})
+
+	t.Run("Proxy errors from routeMessageText", func(t *testing.T) {
+		// Data mocks
+		errFromrouteMessageTextMock := handlerCanNotHandleError{
+			errors.New("Expected fake error")}
+		errFromRouteMessageEntities := handlerCanNotHandleError{
+			errors.New("Fake error")}
+
+		// Function mocks
+		tearDownFunc := routeMessageEntitiesMockSetup(errFromRouteMessageEntities)
+		defer tearDownFunc()
+
+		routeMessageTextOld := routeMessageText
+		defer func() { routeMessageText = routeMessageTextOld }()
+		routeMessageText = func(
+			client sender,
+			st storage.DataStorageInterface,
+			message *tgbotapi.Message,
+		) error {
+			return errFromrouteMessageTextMock
+		}
+
+		err := routeMessage(clientMock, stMock, messageMock)
+
+		if errFromRouteMessageEntities == err {
+			t.Fatalf("Expected %#v, got %#v", errFromrouteMessageTextMock, err)
+		}
+
+		if errFromrouteMessageTextMock != err {
+			t.Fatalf("Expected %#v, got %#v", errFromrouteMessageTextMock, err)
+		}
+	})
+}
