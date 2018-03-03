@@ -82,11 +82,6 @@ var routeCallbackQuery = func(
 	st storage.DataStorageInterface,
 	callbackQuery *tgbotapi.CallbackQuery,
 ) error {
-	if callbackQuery.Data == "" {
-		return handlerCanNotHandleError{
-			errors.New("Empty data in the CallbackQuery")}
-	}
-
 	botCommand, payload, err := splitCallbackQueryData(callbackQuery.Data)
 	if err != nil {
 		return handlerCanNotHandleError{
