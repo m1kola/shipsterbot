@@ -3,11 +3,13 @@ package telegram
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/m1kola/shipsterbot/mocks/bot/mock_telegram"
 	"github.com/m1kola/shipsterbot/mocks/mock_storage"
+	"github.com/m1kola/shipsterbot/models"
 	"github.com/m1kola/shipsterbot/storage"
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
@@ -488,7 +490,6 @@ func TestRouteMessage(t *testing.T) {
 	})
 }
 
-// TODO: simplify tests: use interface mocks. See TODO in the "Commands" run
 func TestRouteMessageEntities(t *testing.T) {
 	// Mock setup funcs
 	var messageMockSetup = func(command string) *tgbotapi.Message {
@@ -526,127 +527,27 @@ func TestRouteMessageEntities(t *testing.T) {
 
 	t.Run("Commands", func(t *testing.T) {
 
-		// TODO: Check if there a better way to if there a better way to mock funcs
-		//       I tried to define a type for *func(sender, storage.DataStorageInterface, *tgbotapi.Message) error
-		//       and override hander funcs dynamically, but it doesn't work.
-		//       This definitely can be ahived by an interface, but it seems
-		//       unnecessary to define sturct for each andler...
-		//       But something like HandlerFunc from the net package should work
-
 		t.Run("Supported command", func(t *testing.T) {
-			t.Run("start and help", func(t *testing.T) {
-				// Data mocks
-				errMock := errors.New("Error from start or help")
+			// Data mocks
+			errMock := errors.New("Error from add")
+			messageMock := messageMockSetup(commandAdd)
 
-				// Function mocks
-				handlerFuncOld := handleStart
-				defer func() { handleStart = handlerFuncOld }()
-				handleStart = commandHandlerFunc(func(
-					_ sender,
-					_ storage.DataStorageInterface,
-					_ *tgbotapi.Message,
-				) error {
-					return errMock
-				})
+			// Function mocks
+			handlerFuncOld := handleAdd
+			defer func() { handleAdd = handlerFuncOld }()
+			handleAdd = func(_ sender, _ storage.DataStorageInterface, _ *tgbotapi.Message) error {
+				return errMock
+			}
 
-				t.Run("help", func(t *testing.T) {
-					messageMock := messageMockSetup("help")
-					err := routeMessageEntities(clientMock, stMock, messageMock)
+			err := routeMessageEntities(clientMock, stMock, messageMock)
 
-					if errMock != err {
-						t.Errorf("Expected %#v, got %#v", errMock, err)
-					}
-				})
-
-				t.Run("start", func(t *testing.T) {
-					messageMock := messageMockSetup("start")
-					err := routeMessageEntities(clientMock, stMock, messageMock)
-
-					if errMock != err {
-						t.Errorf("Expected %#v, got %#v", errMock, err)
-					}
-				})
-			})
-
-			t.Run("add", func(t *testing.T) {
-				// Data mocks
-				errMock := errors.New("Error from add")
-				messageMock := messageMockSetup("add")
-
-				// Function mocks
-				handlerFuncOld := handleAdd
-				defer func() { handleAdd = handlerFuncOld }()
-				handleAdd = func(_ sender, _ storage.DataStorageInterface, _ *tgbotapi.Message) error {
-					return errMock
-				}
-
-				err := routeMessageEntities(clientMock, stMock, messageMock)
-
-				if errMock != err {
-					t.Errorf("Expected %#v, got %#v", errMock, err)
-				}
-			})
-
-			t.Run("list", func(t *testing.T) {
-				// Data mocks
-				errMock := errors.New("Error from list")
-				messageMock := messageMockSetup("list")
-
-				// Function mocks
-				handlerFuncOld := handleList
-				defer func() { handleList = handlerFuncOld }()
-				handleList = func(_ sender, _ storage.DataStorageInterface, _ *tgbotapi.Message) error {
-					return errMock
-				}
-
-				err := routeMessageEntities(clientMock, stMock, messageMock)
-
-				if errMock != err {
-					t.Errorf("Expected %#v, got %#v", errMock, err)
-				}
-			})
-
-			t.Run("del", func(t *testing.T) {
-				// Data mocks
-				errMock := errors.New("Error from del")
-				messageMock := messageMockSetup("del")
-
-				// Function mocks
-				handlerFuncOld := handleDel
-				defer func() { handleDel = handlerFuncOld }()
-				handleDel = func(_ sender, _ storage.DataStorageInterface, _ *tgbotapi.Message) error {
-					return errMock
-				}
-
-				err := routeMessageEntities(clientMock, stMock, messageMock)
-
-				if errMock != err {
-					t.Errorf("Expected %#v, got %#v", errMock, err)
-				}
-			})
-
-			t.Run("clear", func(t *testing.T) {
-				// Data mocks
-				errMock := errors.New("Error from clear")
-				messageMock := messageMockSetup("clear")
-
-				// Function mocks
-				handlerFuncOld := handleClear
-				defer func() { handleClear = handlerFuncOld }()
-				handleClear = func(_ sender, _ storage.DataStorageInterface, _ *tgbotapi.Message) error {
-					return errMock
-				}
-
-				err := routeMessageEntities(clientMock, stMock, messageMock)
-
-				if errMock != err {
-					t.Errorf("Expected %#v, got %#v", errMock, err)
-				}
-			})
+			if errMock != err {
+				t.Errorf("Expected %#v, got %#v", errMock, err)
+			}
 		})
 
 		t.Run("Not supported command", func(t *testing.T) {
-			command := "/invalid_command"
+			command := "invalid_command"
 
 			// Data mocks
 			messageMock := messageMockSetup(command)
@@ -654,6 +555,164 @@ func TestRouteMessageEntities(t *testing.T) {
 			err := routeMessageEntities(clientMock, stMock, messageMock)
 			if errCommandIsNotSupported != err {
 				t.Fatalf("Expected %#v, got %#v", errCommandIsNotSupported, err)
+			}
+		})
+	})
+}
+
+func TestRouteMessageText(t *testing.T) {
+	// Common data mocks
+	errMock := errors.New("Fake error")
+	messageMock := &tgbotapi.Message{
+		Chat: &tgbotapi.Chat{
+			ID: 123,
+		},
+		From: &tgbotapi.User{
+			ID: 321,
+		},
+	}
+
+	// Common function mocks
+	handlerMock := commandHandlerFunc(func(
+		_ sender, _ storage.DataStorageInterface, message *tgbotapi.Message,
+	) error {
+		if message != messageMock {
+			t.Error("Wrong message received")
+		}
+
+		return errMock
+	})
+	getBotCommandsMappingOld := getBotCommandsMapping
+	defer func() { getBotCommandsMapping = getBotCommandsMappingOld }()
+	getBotCommandsMapping = func() map[string]botCommand {
+		return map[string]botCommand{
+			commandStart: botCommand{
+				unfinishedCommandHandler: handlerMock,
+			},
+		}
+	}
+
+	// Common interface mocks
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	clientMock := mock_telegram.NewMockbotClientInterface(mockCtrl)
+	stMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
+
+	t.Run("Commands", func(t *testing.T) {
+		t.Run("Supported commands", func(t *testing.T) {
+			// Data mocks
+			unfinishedCommandMock := &models.UnfinishedCommand{
+				Command: commandStart,
+			}
+
+			// Interface mocks
+			gomock.InOrder(
+				stMock.EXPECT().GetUnfinishedCommand(
+					messageMock.Chat.ID,
+					messageMock.From.ID,
+				).Return(unfinishedCommandMock, nil),
+				stMock.EXPECT().DeleteUnfinishedCommand(
+					messageMock.Chat.ID,
+					messageMock.From.ID,
+				).Return(nil),
+			)
+
+			err := routeMessageText(clientMock, stMock, messageMock)
+
+			if errMock != err {
+				t.Errorf("expected %v, got %v", errMock, err)
+			}
+		})
+
+		t.Run("Unfinished command wasn not found", func(t *testing.T) {
+			// Interface mocks
+			stMock.EXPECT().GetUnfinishedCommand(
+				messageMock.Chat.ID,
+				messageMock.From.ID,
+			).Return(nil, nil)
+
+			err := routeMessageText(clientMock, stMock, messageMock)
+
+			if _, ok := err.(handlerCanNotHandleError); !ok {
+				t.Fatalf("expected error of %T, got %T", handlerCanNotHandleError{}, err)
+			}
+
+			expectedMessage := "Can't find unfinished commands"
+			if !strings.Contains(err.Error(), expectedMessage) {
+				t.Errorf("Expected error to contain %#v, got %#v",
+					expectedMessage, err.Error())
+			}
+		})
+
+		t.Run("Not supported command", func(t *testing.T) {
+			// Data mocks
+			unfinishedCommandMock := &models.UnfinishedCommand{
+				Command: "invalid_command",
+			}
+
+			// Interface mocks
+			stMock.EXPECT().GetUnfinishedCommand(
+				messageMock.Chat.ID,
+				messageMock.From.ID,
+			).Return(unfinishedCommandMock, nil)
+
+			err := routeMessageText(clientMock, stMock, messageMock)
+
+			if _, ok := err.(handlerCanNotHandleError); !ok {
+				t.Fatalf("expected error of %T, got %T", handlerCanNotHandleError{}, err)
+			}
+
+			expectedMessage := "Unable to find a handler for the message"
+			if !strings.Contains(err.Error(), expectedMessage) {
+				t.Errorf("Expected error to contain %#v, got %#v",
+					expectedMessage, err.Error())
+			}
+		})
+	})
+
+	t.Run("Storage errors", func(t *testing.T) {
+		t.Run("Can not get unfinished command", func(t *testing.T) {
+			// Data mocks
+			errMock := errors.New("An error from GetUnfinishedCommand")
+
+			// Interface mocks
+			stMock.EXPECT().GetUnfinishedCommand(
+				messageMock.Chat.ID,
+				messageMock.From.ID,
+			).Return(nil, errMock)
+
+			err := routeMessageText(clientMock, stMock, messageMock)
+
+			if !strings.Contains(err.Error(), errMock.Error()) {
+				t.Errorf("Expected error to contain %#v, got \"%s\"",
+					errMock.Error(), err)
+			}
+		})
+
+		t.Run("Can not delete unfinished command", func(t *testing.T) {
+			// Data mocks
+			errMock := errors.New("An error from DeleteUnfinishedCommand")
+			unfinishedCommandMock := &models.UnfinishedCommand{
+				Command: commandStart,
+			}
+
+			// Interface mocks
+			gomock.InOrder(
+				stMock.EXPECT().GetUnfinishedCommand(
+					messageMock.Chat.ID,
+					messageMock.From.ID,
+				).Return(unfinishedCommandMock, nil),
+				stMock.EXPECT().DeleteUnfinishedCommand(
+					messageMock.Chat.ID,
+					messageMock.From.ID,
+				).Return(errMock),
+			)
+
+			err := routeMessageText(clientMock, stMock, messageMock)
+
+			if !strings.Contains(err.Error(), errMock.Error()) {
+				t.Errorf("Expected error to contain %#v, got \"%s\"",
+					errMock.Error(), err)
 			}
 		})
 	})
