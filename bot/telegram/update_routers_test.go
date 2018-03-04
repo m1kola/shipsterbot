@@ -480,6 +480,25 @@ func TestRouteMessageEntities(t *testing.T) {
 		return message
 	}
 
+	// Common data mocks
+	errMock := errors.New("Fake error")
+
+	// Common function mocks
+	handlerMock := func(
+		_ sender, _ storage.DataStorageInterface, _ *tgbotapi.Message,
+	) error {
+		return errMock
+	}
+	getBotCommandsMappingOld := getBotCommandsMapping
+	defer func() { getBotCommandsMapping = getBotCommandsMappingOld }()
+	getBotCommandsMapping = func() map[string]botCommand {
+		return map[string]botCommand{
+			commandAdd: botCommand{
+				commandHandler: commandHandlerFunc(handlerMock),
+			},
+		}
+	}
+
 	// Common interface mocks
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -501,15 +520,7 @@ func TestRouteMessageEntities(t *testing.T) {
 
 		t.Run("Supported command", func(t *testing.T) {
 			// Data mocks
-			errMock := errors.New("Error from add")
 			messageMock := messageMockSetup(commandAdd)
-
-			// Function mocks
-			handlerFuncOld := handleAdd
-			defer func() { handleAdd = handlerFuncOld }()
-			handleAdd = func(_ sender, _ storage.DataStorageInterface, _ *tgbotapi.Message) error {
-				return errMock
-			}
 
 			err := routeMessageEntities(clientMock, stMock, messageMock)
 
@@ -519,10 +530,8 @@ func TestRouteMessageEntities(t *testing.T) {
 		})
 
 		t.Run("Not supported command", func(t *testing.T) {
-			command := "invalid_command"
-
 			// Data mocks
-			messageMock := messageMockSetup(command)
+			messageMock := messageMockSetup("invalid_command")
 
 			err := routeMessageEntities(clientMock, stMock, messageMock)
 			if errCommandIsNotSupported != err {
@@ -545,7 +554,7 @@ func TestRouteMessageText(t *testing.T) {
 	}
 
 	// Common function mocks
-	handlerMock := commandHandlerFunc(func(
+	handlerMock := func(
 		_ sender, _ storage.DataStorageInterface, message *tgbotapi.Message,
 	) error {
 		if message != messageMock {
@@ -553,13 +562,13 @@ func TestRouteMessageText(t *testing.T) {
 		}
 
 		return errMock
-	})
+	}
 	getBotCommandsMappingOld := getBotCommandsMapping
 	defer func() { getBotCommandsMapping = getBotCommandsMappingOld }()
 	getBotCommandsMapping = func() map[string]botCommand {
 		return map[string]botCommand{
 			commandStart: botCommand{
-				unfinishedCommandHandler: handlerMock,
+				unfinishedCommandHandler: commandHandlerFunc(handlerMock),
 			},
 		}
 	}

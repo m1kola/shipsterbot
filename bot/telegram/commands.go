@@ -50,35 +50,35 @@ var getBotCommandsMapping = func() map[string]botCommand {
 		// The `/start` command is implicit: Telegram sends on user's behalf
 		// when they start the bot.
 		commandStart: botCommand{
-			commandHandler: handleStart,
+			commandHandler: commandHandlerFunc(handleStart),
 		},
 		commandHelp: botCommand{
 			description:       "Show the list of available commands and short descriptions",
 			showInHelpMessage: true,
-			commandHandler:    handleStart,
+			commandHandler:    commandHandlerFunc(handleStart),
 		},
 		commandAdd: botCommand{
 			description:              "Add an item into your shopping list",
 			showInHelpMessage:        true,
-			commandHandler:           handleAdd,
-			unfinishedCommandHandler: handleAddSession,
+			commandHandler:           commandHandlerFunc(handleAdd),
+			unfinishedCommandHandler: commandHandlerFunc(handleAddSession),
 		},
 		commandList: botCommand{
 			description:       "Display items the shopping list",
 			showInHelpMessage: true,
-			commandHandler:    handleList,
+			commandHandler:    commandHandlerFunc(handleList),
 		},
 		commandDel: botCommand{
 			description:          "Delete an item from your shopping list",
 			showInHelpMessage:    true,
-			commandHandler:       handleDel,
-			callbackQueryHandler: handleDelCallbackQuery,
+			commandHandler:       commandHandlerFunc(handleDel),
+			callbackQueryHandler: callbackQueryHandlerFunc(handleDelCallbackQuery),
 		},
 		commandClear: botCommand{
 			description:          "Delete all items from the shopping list",
 			showInHelpMessage:    true,
-			commandHandler:       handleClear,
-			callbackQueryHandler: handleClearCallbackQuery,
+			commandHandler:       commandHandlerFunc(handleClear),
+			callbackQueryHandler: callbackQueryHandlerFunc(handleClearCallbackQuery),
 		},
 	}
 

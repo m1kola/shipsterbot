@@ -37,14 +37,14 @@ You can control me by sending these commands:
 	client.Send(msg)
 }
 
-var handleStart = commandHandlerFunc(func(
+func handleStart(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
 ) error {
 	handleHelpMessage(client, message, true)
 	return nil
-})
+}
 
 var handleUnrecognisedMessage = func(client sender, message *tgbotapi.Message) {
 	if len(message.Text) > 0 {
@@ -71,7 +71,7 @@ var handleUnrecoverableError = func(
 	client.Send(msg)
 }
 
-var handleAdd = commandHandlerFunc(func(
+func handleAdd(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -116,9 +116,9 @@ var handleAdd = commandHandlerFunc(func(
 	client.Send(msg)
 
 	return nil
-})
+}
 
-var handleList = commandHandlerFunc(func(
+func handleList(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -156,9 +156,9 @@ var handleList = commandHandlerFunc(func(
 	client.Send(msg)
 
 	return nil
-})
+}
 
-var handleAddSession = commandHandlerFunc(func(
+func handleAddSession(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -183,9 +183,9 @@ var handleAddSession = commandHandlerFunc(func(
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	client.Send(msg)
 	return nil
-})
+}
 
-var handleDel = commandHandlerFunc(func(
+func handleDel(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -224,9 +224,9 @@ var handleDel = commandHandlerFunc(func(
 	client.Send(msg)
 
 	return nil
-})
+}
 
-var handleDelCallbackQuery = callbackQueryHandlerFunc(func(
+func handleDelCallbackQuery(
 	client botClientInterface,
 	st storage.DataStorageInterface,
 	callbackQuery *tgbotapi.CallbackQuery,
@@ -287,9 +287,9 @@ var handleDelCallbackQuery = callbackQueryHandlerFunc(func(
 	}
 
 	return nil
-})
+}
 
-var handleClear = commandHandlerFunc(func(
+func handleClear(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -326,9 +326,9 @@ var handleClear = commandHandlerFunc(func(
 	}
 	client.Send(msg)
 	return nil
-})
+}
 
-var handleClearCallbackQuery = callbackQueryHandlerFunc(func(
+func handleClearCallbackQuery(
 	client botClientInterface,
 	st storage.DataStorageInterface,
 	callbackQuery *tgbotapi.CallbackQuery,
@@ -377,4 +377,4 @@ var handleClearCallbackQuery = callbackQueryHandlerFunc(func(
 	}
 
 	return nil
-})
+}
