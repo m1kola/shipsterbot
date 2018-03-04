@@ -88,11 +88,10 @@ var routeCallbackQuery = func(
 			fmt.Errorf("CallbackQuery data error: %s", err)}
 	}
 
-	// TODO: Define callback name constants, so we can use them here and in handlers
 	switch botCommand {
-	case "del":
+	case commandDel:
 		return handleDelCallbackQuery(client, st, callbackQuery, payload)
-	case "clear":
+	case commandClear:
 		return handleClearCallbackQuery(client, st, callbackQuery, payload)
 	}
 
@@ -148,15 +147,15 @@ var routeMessageEntities = func(
 	//       and their descriptions to use it in handleHelpMessage
 	botCommand := message.Command()
 	switch botCommand {
-	case "help", "start":
-		return handleStart(client, message)
-	case "add":
+	case commandHelp, commandStart:
+		return handleStart(client, st, message)
+	case commandAdd:
 		return handleAdd(client, st, message)
-	case "list":
+	case commandList:
 		return handleList(client, st, message)
-	case "del":
+	case commandDel:
 		return handleDel(client, st, message)
-	case "clear":
+	case commandClear:
 		return handleClear(client, st, message)
 	}
 

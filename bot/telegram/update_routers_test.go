@@ -539,9 +539,13 @@ func TestRouteMessageEntities(t *testing.T) {
 				// Function mocks
 				handlerFuncOld := handleStart
 				defer func() { handleStart = handlerFuncOld }()
-				handleStart = func(_ sender, _ *tgbotapi.Message) error {
+				handleStart = commandHandlerFunc(func(
+					_ sender,
+					_ storage.DataStorageInterface,
+					_ *tgbotapi.Message,
+				) error {
 					return errMock
-				}
+				})
 
 				t.Run("help", func(t *testing.T) {
 					messageMock := messageMockSetup("help")

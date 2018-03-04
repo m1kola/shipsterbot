@@ -37,10 +37,14 @@ You can control me by sending these commands:
 	client.Send(msg)
 }
 
-var handleStart = func(client sender, message *tgbotapi.Message) error {
+var handleStart = commandHandlerFunc(func(
+	client sender,
+	st storage.DataStorageInterface,
+	message *tgbotapi.Message,
+) error {
 	handleHelpMessage(client, message, true)
 	return nil
-}
+})
 
 var handleUnrecognisedMessage = func(client sender, message *tgbotapi.Message) {
 	if len(message.Text) > 0 {
@@ -67,7 +71,7 @@ var handleUnrecoverableError = func(
 	client.Send(msg)
 }
 
-var handleAdd = func(
+var handleAdd = commandHandlerFunc(func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -113,9 +117,9 @@ var handleAdd = func(
 	client.Send(msg)
 
 	return nil
-}
+})
 
-var handleList = func(
+var handleList = commandHandlerFunc(func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -153,9 +157,9 @@ var handleList = func(
 	client.Send(msg)
 
 	return nil
-}
+})
 
-func handleAddSession(
+var handleAddSession = commandHandlerFunc(func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -180,9 +184,9 @@ func handleAddSession(
 	msg := tgbotapi.NewMessage(message.Chat.ID, text)
 	client.Send(msg)
 	return nil
-}
+})
 
-var handleDel = func(
+var handleDel = commandHandlerFunc(func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -221,9 +225,9 @@ var handleDel = func(
 	client.Send(msg)
 
 	return nil
-}
+})
 
-var handleDelCallbackQuery = func(
+var handleDelCallbackQuery = callbackQueryHandlerFunc(func(
 	client botClientInterface,
 	st storage.DataStorageInterface,
 	callbackQuery *tgbotapi.CallbackQuery,
@@ -284,9 +288,9 @@ var handleDelCallbackQuery = func(
 	}
 
 	return nil
-}
+})
 
-var handleClear = func(
+var handleClear = commandHandlerFunc(func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
@@ -313,9 +317,8 @@ var handleClear = func(
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	if !isEmpty {
-		const botCommand = "clear"
-		yesCallbackData := joinCallbackQueryData(botCommand, "1")
-		cancelCallbackData := joinCallbackQueryData(botCommand, "0")
+		yesCallbackData := joinCallbackQueryData(commandClear, "1")
+		cancelCallbackData := joinCallbackQueryData(commandClear, "0")
 
 		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 			[]tgbotapi.InlineKeyboardButton{
@@ -324,9 +327,9 @@ var handleClear = func(
 	}
 	client.Send(msg)
 	return nil
-}
+})
 
-var handleClearCallbackQuery = func(
+var handleClearCallbackQuery = callbackQueryHandlerFunc(func(
 	client botClientInterface,
 	st storage.DataStorageInterface,
 	callbackQuery *tgbotapi.CallbackQuery,
@@ -375,4 +378,4 @@ var handleClearCallbackQuery = func(
 	}
 
 	return nil
-}
+})
