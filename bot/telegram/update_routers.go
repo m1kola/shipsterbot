@@ -179,6 +179,21 @@ var routeMessageText = func(
 				message.Chat.ID, message.From.ID)}
 	}
 
+	// TODO: migrate ADD_SHOPPING_ITEM to commandAdd ("Add") and uncommend the code
+	// i, ok := getBotCommandsMapping()[string(session.Command)]
+	// if !ok {
+	// 	return handlerCanNotHandleError{
+	// 		errors.New("Unable to find a handler for the message")}
+	// }
+	//
+	// if err := st.DeleteUnfinishedCommand(message.Chat.ID, message.From.ID); err != nil {
+	// 	return fmt.Errorf(
+	// 		"Unable to delete an unfinished comamnd (ChatID=%d and UserId=%d): %v",
+	// 		message.Chat.ID, message.From.ID, err)
+	// }
+	//
+	// return i.unfinishedCommandHandler.HandleCommand(client, st, message)
+
 	switch session.Command {
 	case models.CommandAddShoppingItem:
 		err := st.DeleteUnfinishedCommand(message.Chat.ID,
