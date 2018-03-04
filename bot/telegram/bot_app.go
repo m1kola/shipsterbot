@@ -7,8 +7,6 @@ import (
 	"github.com/m1kola/shipsterbot/storage"
 )
 
-// TODO: Consider moving these types into ./types.go
-
 type webHookServerConfig struct {
 	port        string
 	TLSCertPath string
