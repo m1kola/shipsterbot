@@ -487,6 +487,7 @@ func TestRouteMessage(t *testing.T) {
 	})
 }
 
+// TODO: simplify tests: use interface mocks. See TODO in the "Commands" run
 func TestRouteMessageEntities(t *testing.T) {
 	// Mock setup funcs
 	var messageMockSetup = func(command string) *tgbotapi.Message {
