@@ -88,16 +88,14 @@ var routeCallbackQuery = func(
 			fmt.Errorf("CallbackQuery data error: %s", err)}
 	}
 
-	switch botCommand {
-	case commandDel:
-		return handleDelCallbackQuery(client, st, callbackQuery, payload)
-	case commandClear:
-		return handleClearCallbackQuery(client, st, callbackQuery, payload)
+	i, ok := getBotCommandsMapping()[botCommand]
+	if !ok {
+		return handlerCanNotHandleError{
+			fmt.Errorf("Unable to find a handler for CallbackQuery: %v",
+				callbackQuery.Data)}
 	}
 
-	return handlerCanNotHandleError{
-		fmt.Errorf("Unable to find a handler for CallbackQuery: %v",
-			callbackQuery.Data)}
+	return i.callbackQueryHandler.HandleCallbackQuery(client, st, callbackQuery, payload)
 }
 
 // routeMessage routes text messages

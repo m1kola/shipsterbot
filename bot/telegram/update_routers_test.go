@@ -288,6 +288,7 @@ func TestRouteErrors(t *testing.T) {
 	})
 }
 
+// TODO: Simplify tests: not it's easier to mock clear and del commands
 func TestRouteCallbackQuery(t *testing.T) {
 	// Interface mocks
 	mockCtrl := gomock.NewController(t)
