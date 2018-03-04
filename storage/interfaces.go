@@ -2,7 +2,8 @@ package storage
 
 import "github.com/m1kola/shipsterbot/models"
 
-//go:generate mockgen -source=./interfaces.go -destination=../mocks/mock_storage.go -package=mocks DataStorageInterface
+// Generates mocks for tests
+//go:generate mockgen -source=$GOFILE -destination=../mocks/mock_$GOPACKAGE/$GOFILE -package=mock_$GOPACKAGE
 
 // DataStorageInterface represents a struct that handles storage logic
 type DataStorageInterface interface {

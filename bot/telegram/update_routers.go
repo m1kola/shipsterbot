@@ -147,7 +147,6 @@ var routeMessageEntities = func(
 	// 		 Also would be great to have a map of commands names
 	//       and their descriptions to use it in handleHelpMessage
 	botCommand := message.Command()
-	log.Print("aaaa ", botCommand)
 	switch botCommand {
 	case "help", "start":
 		return handleStart(client, message)

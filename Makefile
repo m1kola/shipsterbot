@@ -13,7 +13,6 @@ GOARCH := amd64
 # Current directory based on the Makefile location withut a trailing slash
 ROOT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
-
 GOPATH  := $(ROOT)/.gopath
 BIN     := $(GOPATH)/bin
 BASE    := $(GOPATH)/src/$(IMPORT_PATH)
@@ -38,29 +37,43 @@ $(BIN): | $(BASE)
 GODEP_VERSION   := 0.3.2
 GODEP_URL       := https://github.com/golang/dep/releases/download/v$(GODEP_VERSION)/dep-$(GOOS)-$(GOARCH)
 GODEP           := $(BIN)/dep
-$(GOPATH)/bin/dep: | $(BIN)
+$(GODEP): | $(BIN)
 	curl -fsSL -o $@ $(GODEP_URL) && \
 	chmod +x $@
 
 
-# Iinstall go-bindata
+# Install go-bindata
 GOBINDATA := $(BIN)/go-bindata
-$(BIN)/go-bindata: | $(BIN)
+$(GOBINDATA): | $(BIN)
 	go get -u github.com/jteeuwen/go-bindata/...
+
+
+# Install mockgen
+# NOTE that we don't call mockgen it directly: we use it via go generate
+GOMOCKGEN := $(BIN)/mockgen
+$(GOMOCKGEN): | $(BIN)
+	go get -u github.com/golang/mock/mockgen
 
 
 # Install dependencies using dep
 .PHONY: vendor
-vendor: Gopkg.lock Gopkg.toml | $(GOPATH)/bin/dep
+vendor: Gopkg.lock Gopkg.toml | $(GODEP)
 	cd $(BASE) && \
 	$(GODEP) ensure -vendor-only
 
 
 # Generate bindata for migrations
 .PHONY: migrations
-migrations: | $(BIN)/go-bindata
+migrations: | $(GOBINDATA)
 	cd $(BASE) && \
 	cd ./migrations && $(GOBINDATA) -pkg migrations .
+
+
+# Run go generate (generates mocks, etc)
+.PHONY: go_generate
+go_generate: vendor $(GOMOCKGEN)
+	cd $(BASE) && \
+	go generate ./...
 
 
 # Build the application

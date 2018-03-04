@@ -3,6 +3,9 @@
 
 package telegram
 
+// Generates mocks for tests
+//go:generate mockgen -source=$GOFILE -destination=../../mocks/bot/mock_$GOPACKAGE/$GOFILE -package=mock_$GOPACKAGE
+
 import (
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
