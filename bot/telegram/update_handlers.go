@@ -85,9 +85,8 @@ var handleAdd = commandHandlerFunc(func(
 
 	// If an item name is not provided in arguments,
 	// allow the user to add an item following the two-step process
-	command := models.CommandAddShoppingItem
 	err := st.AddUnfinishedCommand(models.UnfinishedCommand{
-		Command:   command,
+		Command:   commandAdd,
 		ChatID:    message.Chat.ID,
 		CreatedBy: message.From.ID,
 	})
@@ -95,7 +94,7 @@ var handleAdd = commandHandlerFunc(func(
 	if err != nil {
 		return fmt.Errorf(
 			"Unable to create an unfinished comamnd (%v): %v",
-			command, err)
+			commandAdd, err)
 	}
 
 	format := "Ok [%s](tg://user?id=%d), what do you want to add into your shopping list?"

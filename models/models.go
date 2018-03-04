@@ -2,21 +2,13 @@ package models
 
 import "time"
 
-// Command represents an abstract action
-type Command string
-
-const (
-	// CommandAddShoppingItem represents adding into a shopping cart
-	CommandAddShoppingItem = Command("ADD_SHOPPING_ITEM")
-)
-
 // UnfinishedCommand represents unfinished operations
 // for multi step user interactions.
 // For example, when a user wasnts to add an item into his shopping list,
 // he needs to send the "add" command and then answer bot's question
 // (send the name of item), so we need to remember what we have asked user for.
 type UnfinishedCommand struct {
-	Command   Command
+	Command   string
 	ChatID    int64
 	CreatedBy int
 	CreatedAt *time.Time

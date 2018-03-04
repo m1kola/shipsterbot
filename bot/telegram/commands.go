@@ -21,10 +21,12 @@
 package telegram
 
 import (
-	"github.com/m1kola/shipsterbot/storage"
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
+
+	"github.com/m1kola/shipsterbot/storage"
 )
 
+// All possible bot commands
 const (
 	commandStart = "start"
 	commandHelp  = "help"
