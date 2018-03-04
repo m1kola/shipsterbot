@@ -63,6 +63,7 @@ vendor: Gopkg.lock Gopkg.toml | $(GODEP)
 
 
 # Generate bindata for migrations
+MIGRATIONS_BINDATA_PATH := $(BASE)/migrations/bindata.go
 .PHONY: migrations
 migrations: | $(GOBINDATA)
 	cd $(BASE) && \
@@ -78,14 +79,14 @@ go_generate: vendor $(GOMOCKGEN)
 
 # Build the application
 .PHONY: build
-build: vendor
+build: vendor migrations
 	cd $(BASE) && \
 	go build -o $(OUTPUT_BIN)
 
 
 # Run tests for all pages
 .PHONY: test
-test: vendor
+test: vendor migrations
 	cd $(BASE) && \
 	go test -race -cover ./...
 
@@ -93,5 +94,6 @@ test: vendor
 # Cleanup working directory
 .PHONY: clean
 clean:
+	rm -rf $(MIGRATIONS_BINDATA_PATH)
 	rm -rf $(BASE)/$(OUTPUT_BIN)
 	rm -rf $(GOPATH)
