@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
@@ -11,7 +10,7 @@ import (
 	"github.com/m1kola/shipsterbot/storage"
 )
 
-func handleHelpMessage(client sender, message *tgbotapi.Message, isStart bool) {
+var sendHelpMessage = func(client sender, message *tgbotapi.Message, isStart bool) {
 	var greeting string
 	if isStart {
 		greeting = "Hi %s,"
@@ -42,19 +41,8 @@ func handleStart(
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,
 ) error {
-	handleHelpMessage(client, message, true)
+	sendHelpMessage(client, message, true)
 	return nil
-}
-
-var handleUnrecognisedMessage = func(client sender, message *tgbotapi.Message) {
-	if len(message.Text) > 0 {
-		log.Print("No supported bot commands found")
-
-		// Display help text only if we received
-		// a message text: we don't want to reply
-		// to service messages (people added or removed from the group, etc.)
-		handleHelpMessage(client, message, false)
-	}
 }
 
 // handleUnrecoverableError sends the "something went wrong" message to a chat

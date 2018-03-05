@@ -58,12 +58,17 @@ var routeErrors = func(
 
 	log.Print(err)
 
-	// It's ok if we can't handle a message,
-	// because an user can send nonsense.
-	// Let's send a message saying that
-	// we don't understand the input.
+	// It's ok if we can't handle a message, because an user can send nonsense.
+	// Let's send a message saying that we don't understand the input.
 	if _, ok := err.(handlerCanNotHandleError); ok {
-		handleUnrecognisedMessage(client, message)
+		if len(message.Text) > 0 {
+			// Send help text only if we've received a message text: we don't
+			// want to reply to service messages
+			// when people added or removed from the group, etc.
+
+			log.Print("No supported bot commands found")
+			sendHelpMessage(client, message, false)
+		}
 		return
 	}
 

@@ -7,11 +7,12 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	tgbotapi "gopkg.in/telegram-bot-api.v4"
+
 	"github.com/m1kola/shipsterbot/mocks/bot/mock_telegram"
 	"github.com/m1kola/shipsterbot/mocks/mock_storage"
 	"github.com/m1kola/shipsterbot/models"
 	"github.com/m1kola/shipsterbot/storage"
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
 )
 
 func TestRouteUpdates(t *testing.T) {
@@ -215,6 +216,7 @@ func TestRouteErrors(t *testing.T) {
 		Chat: &tgbotapi.Chat{
 			ID: 123,
 		},
+		Text: "some text",
 	}
 
 	t.Run("error is nil", func(t *testing.T) {
@@ -269,13 +271,19 @@ func TestRouteErrors(t *testing.T) {
 			errors.New("fake error")}
 
 		// Function mocks
-		handleUnrecognisedMessageIsCalled := false
-		handleUnrecognisedMessageOld := handleUnrecognisedMessage
-		defer func() { handleUnrecognisedMessage = handleUnrecognisedMessageOld }()
-		handleUnrecognisedMessage = func(
-			_ sender, actualMessage *tgbotapi.Message,
+		sendHelpMessageIsCalled := false
+		sendHelpMessageOld := sendHelpMessage
+		defer func() { sendHelpMessage = sendHelpMessageOld }()
+		sendHelpMessage = func(
+			_ sender,
+			actualMessage *tgbotapi.Message,
+			isStart bool,
 		) {
-			handleUnrecognisedMessageIsCalled = true
+			sendHelpMessageIsCalled = true
+
+			if isStart {
+				t.Error("isStart should be false, got true")
+			}
 
 			if actualMessage != messageMock {
 				t.Errorf("got %#v, expected %#v", actualMessage, messageMock)
@@ -284,8 +292,8 @@ func TestRouteErrors(t *testing.T) {
 
 		routeErrors(clientMock, messageMock, errMock)
 
-		if !handleUnrecognisedMessageIsCalled {
-			t.Error("handleUnrecoverableError wasn't called")
+		if !sendHelpMessageIsCalled {
+			t.Error("sendHelpMessage wasn't called")
 		}
 	})
 }
