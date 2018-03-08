@@ -471,23 +471,6 @@ func TestRouteMessage(t *testing.T) {
 }
 
 func TestRouteMessageEntities(t *testing.T) {
-	// Mock setup funcs
-	var messageMockSetup = func(command string) *tgbotapi.Message {
-		commandWithSlash := fmt.Sprintf("/%s", command)
-		message := &tgbotapi.Message{
-			Entities: &[]tgbotapi.MessageEntity{
-				tgbotapi.MessageEntity{
-					Type:   "bot_command",
-					Offset: 0,
-					Length: len(commandWithSlash),
-				},
-			},
-			Text: commandWithSlash,
-		}
-
-		return message
-	}
-
 	// Common data mocks
 	errMock := errors.New("Fake error")
 
@@ -528,7 +511,7 @@ func TestRouteMessageEntities(t *testing.T) {
 
 		t.Run("Supported command", func(t *testing.T) {
 			// Data mocks
-			messageMock := messageMockSetup(commandAdd)
+			messageMock := mock_telegram.MessageCommandMockSetup(commandAdd, "")
 
 			err := routeMessageEntities(clientMock, stMock, messageMock)
 
@@ -539,7 +522,7 @@ func TestRouteMessageEntities(t *testing.T) {
 
 		t.Run("Not supported command", func(t *testing.T) {
 			// Data mocks
-			messageMock := messageMockSetup("invalid_command")
+			messageMock := mock_telegram.MessageCommandMockSetup("invalid_command", "")
 
 			err := routeMessageEntities(clientMock, stMock, messageMock)
 			if errCommandIsNotSupported != err {

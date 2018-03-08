@@ -146,7 +146,7 @@ func handleList(
 	return nil
 }
 
-func handleAddSession(
+var handleAddSession = func(
 	client sender,
 	st storage.DataStorageInterface,
 	message *tgbotapi.Message,

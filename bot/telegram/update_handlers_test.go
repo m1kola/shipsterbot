@@ -11,6 +11,7 @@ import (
 	"github.com/m1kola/shipsterbot/gomockhelpers"
 	"github.com/m1kola/shipsterbot/mocks/bot/mock_telegram"
 	"github.com/m1kola/shipsterbot/mocks/mock_storage"
+	"github.com/m1kola/shipsterbot/storage"
 )
 
 func TestHelpMessages(t *testing.T) {
@@ -115,4 +116,58 @@ func TestHandleUnrecoverableError(t *testing.T) {
 	}))
 
 	handleUnrecoverableError(clientMock, expectedChatID, errors.New("fake err"))
+}
+
+func TestHandleAdd(t *testing.T) {
+	// Common interface mocks
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	clientMock := mock_telegram.NewMocksender(mockCtrl)
+	stMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
+
+	// Common data mocks
+	errMock := errors.New("fake error")
+
+	t.Run("Handle command arguments", func(t *testing.T) {
+		messageMock := mock_telegram.MessageCommandMockSetup(commandAdd, "some item")
+
+		handleAddSessionOld := handleAddSession
+		defer func() { handleAddSession = handleAddSessionOld }()
+		handleAddSession = func(
+			_ sender,
+			_ storage.DataStorageInterface,
+			message *tgbotapi.Message,
+		) error {
+			if message != messageMock {
+				t.Error("Unexpected message received")
+			}
+
+			return errMock
+		}
+
+		err := handleAdd(clientMock, stMock, messageMock)
+
+		if errMock != err {
+			t.Errorf("Expected err %#v, got %#v", errMock, err)
+		}
+	})
+
+	t.Run("Storage error", func(t *testing.T) {
+		messageMock := &tgbotapi.Message{
+			Chat: &tgbotapi.Chat{
+				ID: 123,
+			},
+			From: &tgbotapi.User{
+				ID: 321,
+			},
+		}
+
+		stMock.EXPECT().AddUnfinishedCommand(gomock.Any()).Return(errMock)
+
+		err := handleAdd(clientMock, stMock, messageMock)
+
+		if !strings.Contains(err.Error(), errMock.Error()) {
+			t.Errorf("Expected err %#v, got %#v", errMock, err)
+		}
+	})
 }
