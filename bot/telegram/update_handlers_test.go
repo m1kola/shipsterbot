@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -16,7 +17,7 @@ func TestHelpMessages(t *testing.T) {
 	// Common interface mocks
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	clientMock := mock_telegram.NewMockbotClientInterface(mockCtrl)
+	clientMock := mock_telegram.NewMocksender(mockCtrl)
 	stMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
 
 	messageMock := &tgbotapi.Message{
@@ -86,4 +87,32 @@ func TestHelpMessages(t *testing.T) {
 			handleStart(clientMock, stMock, messageMock)
 		})
 	})
+}
+
+func TestHandleUnrecoverableError(t *testing.T) {
+	var expectedChatID int64 = 123
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	clientMock := mock_telegram.NewMockbotClientInterface(mockCtrl)
+
+	clientMock.EXPECT().Send(gomockhelpers.MatcherFunc(func(x interface{}) bool {
+		msgCfg, ok := x.(tgbotapi.MessageConfig)
+		if !ok {
+			return false
+		}
+
+		// Reply to the same chat
+		if msgCfg.ChatID != expectedChatID {
+			return false
+		}
+
+		if !strings.Contains(msgCfg.Text, "Please, try again a bit later") {
+			return false
+		}
+
+		return true
+	}))
+
+	handleUnrecoverableError(clientMock, expectedChatID, errors.New("fake err"))
 }
