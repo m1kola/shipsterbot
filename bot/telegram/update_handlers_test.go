@@ -170,4 +170,91 @@ func TestHandleAdd(t *testing.T) {
 			t.Errorf("Expected err %#v, got %#v", errMock, err)
 		}
 	})
+
+	t.Run("Success", func(t *testing.T) {
+		t.Run("Private chat", func(t *testing.T) {
+			messageMock := &tgbotapi.Message{
+				Chat: &tgbotapi.Chat{
+					ID:   123,
+					Type: "private",
+				},
+				From: &tgbotapi.User{
+					ID:        321,
+					FirstName: "m1kola",
+				},
+			}
+
+			stMock.EXPECT().AddUnfinishedCommand(gomock.Any()).Return(nil)
+			clientMock.EXPECT().Send(gomockhelpers.MatcherFunc(func(x interface{}) bool {
+				msgCfg, ok := x.(tgbotapi.MessageConfig)
+				if !ok {
+					return false
+				}
+
+				// Reply to the same chat
+				if msgCfg.ChatID != messageMock.Chat.ID {
+					return false
+				}
+
+				// If replyMarkup is present, check that
+				// bot is NOT forcing a client to reply
+				if replyMarkup, ok := msgCfg.ReplyMarkup.(tgbotapi.ForceReply); ok {
+					if !replyMarkup.ForceReply || !replyMarkup.Selective {
+						return false
+					}
+				}
+
+				return true
+			}))
+
+			err := handleAdd(clientMock, stMock, messageMock)
+
+			if err != nil {
+				t.Errorf("Unexpected err: got %#v", err)
+			}
+		})
+
+		t.Run("Group chat", func(t *testing.T) {
+			messageMock := &tgbotapi.Message{
+				Chat: &tgbotapi.Chat{
+					ID:   123,
+					Type: "group",
+				},
+				From: &tgbotapi.User{
+					ID:        321,
+					FirstName: "m1kola",
+				},
+			}
+
+			stMock.EXPECT().AddUnfinishedCommand(gomock.Any()).Return(nil)
+			clientMock.EXPECT().Send(gomockhelpers.MatcherFunc(func(x interface{}) bool {
+				msgCfg, ok := x.(tgbotapi.MessageConfig)
+				if !ok {
+					return false
+				}
+
+				// Reply to the same chat
+				if msgCfg.ChatID != messageMock.Chat.ID {
+					return false
+				}
+
+				// Check that bot is forcing a client to reply
+				replyMarkup, ok := msgCfg.ReplyMarkup.(tgbotapi.ForceReply)
+				if !ok {
+					return false
+				}
+				if !replyMarkup.ForceReply || !replyMarkup.Selective {
+					return false
+				}
+
+				return true
+			}))
+
+			err := handleAdd(clientMock, stMock, messageMock)
+
+			if err != nil {
+				t.Errorf("Unexpected err: got %#v", err)
+			}
+		})
+	})
 }
