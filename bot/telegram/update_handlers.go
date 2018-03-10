@@ -259,26 +259,11 @@ func handleDelCallbackQuery(
 		text = "Can't find an item, sorry."
 	}
 
-	// Edit previous message to hide the keyboard
-	{
-		// It's important to send replyMarkup exactly like this,
-		// because otherwise telegram clients will not hide the keybaord
-		replyMarkup := tgbotapi.NewInlineKeyboardMarkup(
-			[]tgbotapi.InlineKeyboardButton{},
-		)
-		msg := tgbotapi.NewEditMessageReplyMarkup(
-			chatID,
-			messageID,
-			replyMarkup,
-		)
-		client.Send(msg)
-	}
+	hideInlineKeybaord(client, chatID, messageID)
 
 	// Send deletion confimration text
-	{
-		msg := tgbotapi.NewMessage(chatID, text)
-		client.Send(msg)
-	}
+	msg := tgbotapi.NewMessage(chatID, text)
+	client.Send(msg)
 
 	return nil
 }
@@ -361,26 +346,27 @@ func handleClearCallbackQuery(
 		text = "Canceling. Your items are still in your list."
 	}
 
-	// Edit previous message to hide the keyboard
-	{
-		// It's important to send replyMarkup exactly like this,
-		// because otherwise telegram clients will not hide the keybaord
-		replyMarkup := tgbotapi.NewInlineKeyboardMarkup(
-			[]tgbotapi.InlineKeyboardButton{},
-		)
-		msg := tgbotapi.NewEditMessageReplyMarkup(
-			chatID,
-			messageID,
-			replyMarkup,
-		)
-		client.Send(msg)
-	}
+	hideInlineKeybaord(client, chatID, messageID)
 
 	// Send deletion confimration text
-	{
-		msg := tgbotapi.NewMessage(chatID, text)
-		client.Send(msg)
-	}
+	msg := tgbotapi.NewMessage(chatID, text)
+	client.Send(msg)
 
 	return nil
+}
+
+// hideInlineKeybaord makes the telegram client to hide inline keybaord
+// by editing a message with `messageID` in in a chat with `chatID`
+func hideInlineKeybaord(client botClientInterface, chatID int64, messageID int) {
+	// It's important to send replyMarkup exactly like this,
+	// because otherwise telegram clients will not hide the keybaord
+	replyMarkup := tgbotapi.NewInlineKeyboardMarkup(
+		[]tgbotapi.InlineKeyboardButton{},
+	)
+	msg := tgbotapi.NewEditMessageReplyMarkup(
+		chatID,
+		messageID,
+		replyMarkup,
+	)
+	client.Send(msg)
 }
