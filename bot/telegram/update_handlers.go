@@ -328,19 +328,24 @@ func handleClearCallbackQuery(
 	callbackQuery *tgbotapi.CallbackQuery,
 	data string,
 ) error {
+	const dataConfim = "1"
+	const dataCancel = "0"
+
 	client.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
 	chatID := callbackQuery.Message.Chat.ID
 	messageID := callbackQuery.Message.MessageID
-	confirmed, err := strconv.ParseBool(data)
-	if err != nil {
+	dataIsValid := data == dataConfim || data == dataCancel
+	if !dataIsValid {
 		return fmt.Errorf(
-			"Unable to parse confirmation from the CallbackQuery data %s: %v",
-			data, err)
+			"Unable to parse confirmation from the CallbackQuery data %#v",
+			data,
+		)
 	}
 
 	var text string
+	confirmed := data == dataConfim
 	if confirmed {
 		text = "Ok, I've deleted all items from you shopping list.\n\nNow you can start from scratch, if you wish."
 

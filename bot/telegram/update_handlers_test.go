@@ -646,7 +646,7 @@ func TestHandleDelCallbackQuery(t *testing.T) {
 				expectedText := "Can't find an item"
 				if !strings.Contains(msgCfg.Text, expectedText) {
 					t.Fatalf(
-						"Expected message to contain%#v. Got: %#v",
+						"Expected message to contain %#v. Got: %#v",
 						expectedText, msgCfg.Text,
 					)
 				}
@@ -687,6 +687,180 @@ func TestHandleDelCallbackQuery(t *testing.T) {
 			})
 
 			err := handleDelCallbackQuery(clientMock, stMock, callbackQueryMock, dataMock)
+			if err != nil {
+				t.Errorf("Unexpected error: %#v", err)
+			}
+		})
+
+	})
+}
+
+func TestHandleClearCallbackQuery(t *testing.T) {
+	// Common interface mocks
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	clientMock := mock_telegram.NewMockbotClientInterface(mockCtrl)
+	stMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
+
+	// Common data mocks
+	errMock := errors.New("Fake error")
+	callbackQueryMock := &tgbotapi.CallbackQuery{
+		ID: "some-callback-id",
+		Message: &tgbotapi.Message{
+			MessageID: 123,
+			Chat:      &tgbotapi.Chat{ID: 123},
+			Text:      "Milk",
+		},
+	}
+
+	generateCallbackQueryIDChecker := func(t *testing.T) interface{} {
+		return func(config tgbotapi.CallbackConfig) {
+			if config.CallbackQueryID != callbackQueryMock.ID {
+				t.Fatalf(
+					"Expected callaback query ID %s, got %s",
+					callbackQueryMock.ID, config.CallbackQueryID,
+				)
+			}
+		}
+	}
+
+	t.Run("Callback data parsing error", func(t *testing.T) {
+		// Data mocks
+		invalidData := "not bool"
+
+		// Interface mocks
+		clientMock.EXPECT().AnswerCallbackQuery(
+			gomock.Any(),
+		).Do(generateCallbackQueryIDChecker(t))
+
+		err := handleClearCallbackQuery(clientMock, stMock, callbackQueryMock, invalidData)
+
+		expectedErrorText := "Unable to parse confirmation"
+		if !strings.Contains(err.Error(), expectedErrorText) {
+			t.Errorf(
+				"Expected error to contain %#v, got %#v",
+				expectedErrorText, err.Error(),
+			)
+		}
+	})
+
+	t.Run("Storage error", func(t *testing.T) {
+		t.Run("DeleteAllShoppingItems", func(t *testing.T) {
+			// Data mocks
+			dataMock := "1"
+
+			// Interface mocks
+			clientMock.EXPECT().AnswerCallbackQuery(
+				gomock.Any(),
+			).Do(generateCallbackQueryIDChecker(t))
+
+			stMock.EXPECT().DeleteAllShoppingItems(
+				callbackQueryMock.Message.Chat.ID,
+			).Return(errMock)
+
+			err := handleClearCallbackQuery(clientMock, stMock, callbackQueryMock, dataMock)
+			if !strings.Contains(err.Error(), errMock.Error()) {
+				t.Errorf(
+					"Expected error to contain %#v, got %#v",
+					errMock.Error(), err.Error(),
+				)
+			}
+		})
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		// TODO: Share with TestHandleDelCallbackQuery?
+		generateSendHideKeybaordCallChecker := func(t *testing.T) interface{} {
+			return func(msgCfg tgbotapi.EditMessageReplyMarkupConfig) {
+				if msgCfg.ChatID != callbackQueryMock.Message.Chat.ID {
+					t.Errorf(
+						"Expected to reply to the chat with ID %d, but reply sent to %d",
+						msgCfg.ChatID,
+						callbackQueryMock.Message.Chat.ID,
+					)
+				}
+
+				hasOneRow := len(msgCfg.ReplyMarkup.InlineKeyboard) == 1
+				firstRowIsEmpty := len(msgCfg.ReplyMarkup.InlineKeyboard[0]) == 1
+				if hasOneRow && firstRowIsEmpty {
+					t.Error(
+						"Expected the message update to contain empty inline",
+						"keyboard layout to hide the keybaord",
+					)
+				}
+			}
+		}
+
+		t.Run("User confirms deletion", func(t *testing.T) {
+			// Test cases
+			dataMock := "1"
+
+			// Interface mocks
+			clientMock.EXPECT().AnswerCallbackQuery(
+				gomock.Any(),
+			).Do(generateCallbackQueryIDChecker(t))
+			stMock.EXPECT().DeleteAllShoppingItems(
+				callbackQueryMock.Message.Chat.ID,
+			).Return(nil)
+
+			sendHideKeybaordCall := clientMock.EXPECT().Send(gomock.Any())
+			sendHideKeybaordCall.Do(generateSendHideKeybaordCallChecker(t))
+			sendTextCall := clientMock.EXPECT().Send(gomock.Any())
+			sendTextCall.Do(func(msgCfg tgbotapi.MessageConfig) {
+				if msgCfg.ChatID != callbackQueryMock.Message.Chat.ID {
+					t.Errorf(
+						"Expected to reply to the chat with ID %d, but reply sent to %d",
+						msgCfg.ChatID,
+						callbackQueryMock.Message.Chat.ID,
+					)
+				}
+
+				expectedText := "deleted all items"
+				if !strings.Contains(msgCfg.Text, expectedText) {
+					t.Fatalf(
+						"Expected message to contain %#v. Got: %#v",
+						expectedText, msgCfg.Text,
+					)
+				}
+			})
+
+			err := handleClearCallbackQuery(clientMock, stMock, callbackQueryMock, dataMock)
+			if err != nil {
+				t.Errorf("Unexpected error: %#v", err)
+			}
+		})
+
+		t.Run("User cancels deletion", func(t *testing.T) {
+			// Test cases
+			dataMock := "0"
+
+			// Interface mocks
+			clientMock.EXPECT().AnswerCallbackQuery(
+				gomock.Any(),
+			).Do(generateCallbackQueryIDChecker(t))
+
+			sendHideKeybaordCall := clientMock.EXPECT().Send(gomock.Any())
+			sendHideKeybaordCall.Do(generateSendHideKeybaordCallChecker(t))
+			sendTextCall := clientMock.EXPECT().Send(gomock.Any())
+			sendTextCall.Do(func(msgCfg tgbotapi.MessageConfig) {
+				if msgCfg.ChatID != callbackQueryMock.Message.Chat.ID {
+					t.Errorf(
+						"Expected to reply to the chat with ID %d, but reply sent to %d",
+						msgCfg.ChatID,
+						callbackQueryMock.Message.Chat.ID,
+					)
+				}
+
+				expectedText := "Canceling"
+				if !strings.Contains(msgCfg.Text, expectedText) {
+					t.Fatalf(
+						"Expected message to contain %#v. Got: %#v",
+						expectedText, msgCfg.Text,
+					)
+				}
+			})
+
+			err := handleClearCallbackQuery(clientMock, stMock, callbackQueryMock, dataMock)
 			if err != nil {
 				t.Errorf("Unexpected error: %#v", err)
 			}
