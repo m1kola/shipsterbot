@@ -310,3 +310,88 @@ func TestHandleList(t *testing.T) {
 		})
 	})
 }
+
+func TestHandleAddSession(t *testing.T) {
+	// Common interface mocks
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	clientMock := mock_telegram.NewMocksender(mockCtrl)
+	stMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
+
+	t.Run("Storage error", func(t *testing.T) {
+		// Data mocks
+		errMock := errors.New("fake error")
+		messageMock := &tgbotapi.Message{
+			Text: "Milk",
+			Chat: &tgbotapi.Chat{ID: 123},
+			From: &tgbotapi.User{ID: 321},
+		}
+
+		stMock.EXPECT().AddShoppingItemIntoShoppingList(gomock.Any()).Return(errMock)
+
+		err := handleAddSession(clientMock, stMock, messageMock)
+
+		if !strings.Contains(err.Error(), errMock.Error()) {
+			t.Errorf("Expected err %#v, got %#v", errMock, err)
+		}
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		// Test cases
+		expectedItemName := "milk"
+		testCases := []*tgbotapi.Message{
+			// The commandAdd with an item name as a command argument
+			mock_telegram.MessageCommandMockSetup(commandAdd, expectedItemName),
+
+			// Plain text message
+			&tgbotapi.Message{Text: expectedItemName},
+		}
+
+		for _, messageMock := range testCases {
+			// Set up common message mock fields
+			messageMock.Chat = &tgbotapi.Chat{ID: 123}
+			messageMock.From = &tgbotapi.User{ID: 321}
+
+			// Set up interface mocks
+			stMock.EXPECT().AddShoppingItemIntoShoppingList(
+				gomock.Any(),
+			).Do(func(item models.ShoppingItem) {
+				if item.Name != expectedItemName {
+					t.Errorf(
+						"Expected item with name %#v, got %#v",
+						expectedItemName, item.Name,
+					)
+				}
+				if item.ChatID != messageMock.Chat.ID {
+					t.Errorf(
+						"Expected ChatID to be %d, got %d",
+						messageMock.Chat.ID, item.ChatID,
+					)
+				}
+			}).Return(nil)
+
+			clientMock.EXPECT().Send(
+				gomock.Any(),
+			).Do(func(msgCfg tgbotapi.MessageConfig) {
+				if msgCfg.ChatID != messageMock.Chat.ID {
+					t.Errorf(
+						"Expected to reply to the chat with ID %d, but reply sent to %d",
+						msgCfg.ChatID,
+						messageMock.Chat.ID,
+					)
+				}
+
+				expectedText := expectedItemName
+				if !strings.Contains(msgCfg.Text, expectedText) {
+					t.Fatalf("Expected message to contain %#v", expectedText)
+				}
+			})
+
+			err := handleAddSession(clientMock, stMock, messageMock)
+			if err != nil {
+				t.Errorf("Unexpected err: got %#v", err)
+			}
+		}
+
+	})
+}

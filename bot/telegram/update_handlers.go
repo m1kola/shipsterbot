@@ -65,7 +65,6 @@ func handleAdd(
 	message *tgbotapi.Message,
 ) error {
 	itemName := message.CommandArguments()
-
 	if itemName != "" {
 		// If item name is supplied - just add it
 		return handleAddSession(client, st, message)
