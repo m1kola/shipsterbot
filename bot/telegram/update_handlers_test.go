@@ -746,9 +746,6 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 
 	t.Run("Storage error", func(t *testing.T) {
 		t.Run("DeleteAllShoppingItems", func(t *testing.T) {
-			// Data mocks
-			dataMock := "1"
-
 			// Interface mocks
 			clientMock.EXPECT().AnswerCallbackQuery(
 				gomock.Any(),
@@ -758,7 +755,9 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 				callbackQueryMock.Message.Chat.ID,
 			).Return(errMock)
 
-			err := handleClearCallbackQuery(clientMock, stMock, callbackQueryMock, dataMock)
+			err := handleClearCallbackQuery(
+				clientMock, stMock, callbackQueryMock, clearCallbackDataConfim,
+			)
 			if !strings.Contains(err.Error(), errMock.Error()) {
 				t.Errorf(
 					"Expected error to contain %#v, got %#v",
@@ -792,9 +791,6 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 		}
 
 		t.Run("User confirms deletion", func(t *testing.T) {
-			// Test cases
-			dataMock := "1"
-
 			// Interface mocks
 			clientMock.EXPECT().AnswerCallbackQuery(
 				gomock.Any(),
@@ -824,16 +820,15 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 				}
 			})
 
-			err := handleClearCallbackQuery(clientMock, stMock, callbackQueryMock, dataMock)
+			err := handleClearCallbackQuery(
+				clientMock, stMock, callbackQueryMock, clearCallbackDataConfim,
+			)
 			if err != nil {
 				t.Errorf("Unexpected error: %#v", err)
 			}
 		})
 
 		t.Run("User cancels deletion", func(t *testing.T) {
-			// Test cases
-			dataMock := "0"
-
 			// Interface mocks
 			clientMock.EXPECT().AnswerCallbackQuery(
 				gomock.Any(),
@@ -860,7 +855,9 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 				}
 			})
 
-			err := handleClearCallbackQuery(clientMock, stMock, callbackQueryMock, dataMock)
+			err := handleClearCallbackQuery(
+				clientMock, stMock, callbackQueryMock, clearCallbackDataCancel,
+			)
 			if err != nil {
 				t.Errorf("Unexpected error: %#v", err)
 			}

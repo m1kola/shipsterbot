@@ -283,6 +283,9 @@ func handleDelCallbackQuery(
 	return nil
 }
 
+const clearCallbackDataConfim = "1"
+const clearCallbackDataCancel = "0"
+
 func handleClear(
 	client sender,
 	st storage.DataStorageInterface,
@@ -310,8 +313,8 @@ func handleClear(
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	if !isEmpty {
-		yesCallbackData := joinCallbackQueryData(commandClear, "1")
-		cancelCallbackData := joinCallbackQueryData(commandClear, "0")
+		yesCallbackData := joinCallbackQueryData(commandClear, clearCallbackDataConfim)
+		cancelCallbackData := joinCallbackQueryData(commandClear, clearCallbackDataCancel)
 
 		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 			[]tgbotapi.InlineKeyboardButton{
@@ -328,15 +331,13 @@ func handleClearCallbackQuery(
 	callbackQuery *tgbotapi.CallbackQuery,
 	data string,
 ) error {
-	const dataConfim = "1"
-	const dataCancel = "0"
 
 	client.AnswerCallbackQuery(tgbotapi.NewCallback(
 		callbackQuery.ID, ""))
 
 	chatID := callbackQuery.Message.Chat.ID
 	messageID := callbackQuery.Message.MessageID
-	dataIsValid := data == dataConfim || data == dataCancel
+	dataIsValid := data == clearCallbackDataConfim || data == clearCallbackDataCancel
 	if !dataIsValid {
 		return fmt.Errorf(
 			"Unable to parse confirmation from the CallbackQuery data %#v",
@@ -345,7 +346,7 @@ func handleClearCallbackQuery(
 	}
 
 	var text string
-	confirmed := data == dataConfim
+	confirmed := data == clearCallbackDataConfim
 	if confirmed {
 		text = "Ok, I've deleted all items from you shopping list.\n\nNow you can start from scratch, if you wish."
 
