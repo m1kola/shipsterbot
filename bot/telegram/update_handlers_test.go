@@ -3,6 +3,7 @@ package telegram
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -501,5 +502,195 @@ func TestHandleDel(t *testing.T) {
 				t.Errorf("Unexpected err: got %#v", err)
 			}
 		})
+	})
+}
+
+func TestHandleDelCallbackQuery(t *testing.T) {
+	// Common interface mocks
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	clientMock := mock_telegram.NewMockbotClientInterface(mockCtrl)
+	stMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
+
+	// Common data mocks
+	errMock := errors.New("Fake error")
+	callbackQueryMock := &tgbotapi.CallbackQuery{
+		ID: "some-callback-id",
+		Message: &tgbotapi.Message{
+			MessageID: 123,
+			Chat:      &tgbotapi.Chat{ID: 123},
+			Text:      "Milk",
+		},
+	}
+
+	generateCallbackQueryIDChecker := func(t *testing.T) interface{} {
+		return func(config tgbotapi.CallbackConfig) {
+			if config.CallbackQueryID != callbackQueryMock.ID {
+				t.Fatalf(
+					"Expected callaback query ID %s, got %s",
+					callbackQueryMock.ID, config.CallbackQueryID,
+				)
+			}
+		}
+	}
+
+	t.Run("Callback data parsing error", func(t *testing.T) {
+		// Data mocks
+		invalidData := "not int"
+
+		// Interface mocks
+		clientMock.EXPECT().AnswerCallbackQuery(
+			gomock.Any(),
+		).Do(generateCallbackQueryIDChecker(t))
+
+		err := handleDelCallbackQuery(clientMock, stMock, callbackQueryMock, invalidData)
+		if !strings.Contains(err.Error(), strconv.ErrSyntax.Error()) {
+			t.Errorf(
+				"Expected error to contain %#v, got %#v",
+				strconv.ErrSyntax.Error(), err.Error(),
+			)
+		}
+	})
+
+	t.Run("Storage error", func(t *testing.T) {
+		t.Run("GetShoppingItem", func(t *testing.T) {
+			// Data mocks
+			expectedItemID := int64(123)
+			dataMock := strconv.FormatInt(expectedItemID, 10)
+
+			// Interface mocks
+			clientMock.EXPECT().AnswerCallbackQuery(
+				gomock.Any(),
+			).Do(generateCallbackQueryIDChecker(t))
+
+			stMock.EXPECT().GetShoppingItem(expectedItemID).Return(nil, errMock)
+
+			err := handleDelCallbackQuery(clientMock, stMock, callbackQueryMock, dataMock)
+			if !strings.Contains(err.Error(), errMock.Error()) {
+				t.Errorf(
+					"Expected error to contain %#v, got %#v",
+					errMock.Error(), err.Error(),
+				)
+			}
+		})
+		t.Run("DeleteShoppingItem", func(t *testing.T) {
+			// Data mocks
+			expectedItemID := int64(123)
+			dataMock := strconv.FormatInt(expectedItemID, 10)
+			item := &models.ShoppingItem{Name: "Milk"}
+
+			// Interface mocks
+			clientMock.EXPECT().AnswerCallbackQuery(
+				gomock.Any(),
+			).Do(generateCallbackQueryIDChecker(t))
+
+			stMock.EXPECT().GetShoppingItem(expectedItemID).Return(item, nil)
+			stMock.EXPECT().DeleteShoppingItem(expectedItemID).Return(errMock)
+
+			err := handleDelCallbackQuery(clientMock, stMock, callbackQueryMock, dataMock)
+			if !strings.Contains(err.Error(), errMock.Error()) {
+				t.Errorf(
+					"Expected error to contain %#v, got %#v",
+					errMock.Error(), err.Error(),
+				)
+			}
+		})
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		// Common data mocks
+		expectedItemID := int64(123)
+		dataMock := strconv.FormatInt(expectedItemID, 10)
+		item := &models.ShoppingItem{Name: "Milk"}
+
+		generateSendHideKeybaordCallChecker := func(t *testing.T) interface{} {
+			return func(msgCfg tgbotapi.EditMessageReplyMarkupConfig) {
+				if msgCfg.ChatID != callbackQueryMock.Message.Chat.ID {
+					t.Errorf(
+						"Expected to reply to the chat with ID %d, but reply sent to %d",
+						msgCfg.ChatID,
+						callbackQueryMock.Message.Chat.ID,
+					)
+				}
+
+				hasOneRow := len(msgCfg.ReplyMarkup.InlineKeyboard) == 1
+				firstRowIsEmpty := len(msgCfg.ReplyMarkup.InlineKeyboard[0]) == 1
+				if hasOneRow && firstRowIsEmpty {
+					t.Error(
+						"Expected the message update to contain empty inline",
+						"keyboard layout to hide the keybaord",
+					)
+				}
+			}
+		}
+
+		t.Run("Item wasn't found", func(t *testing.T) {
+			// Interface mocks
+			clientMock.EXPECT().AnswerCallbackQuery(
+				gomock.Any(),
+			).Do(generateCallbackQueryIDChecker(t))
+			stMock.EXPECT().GetShoppingItem(expectedItemID).Return(nil, nil)
+
+			sendHideKeybaordCall := clientMock.EXPECT().Send(gomock.Any())
+			sendHideKeybaordCall.Do(generateSendHideKeybaordCallChecker(t))
+			sendTextCall := clientMock.EXPECT().Send(gomock.Any())
+			sendTextCall.Do(func(msgCfg tgbotapi.MessageConfig) {
+				if msgCfg.ChatID != callbackQueryMock.Message.Chat.ID {
+					t.Errorf(
+						"Expected to reply to the chat with ID %d, but reply sent to %d",
+						msgCfg.ChatID,
+						callbackQueryMock.Message.Chat.ID,
+					)
+				}
+
+				expectedText := "Can't find an item"
+				if !strings.Contains(msgCfg.Text, expectedText) {
+					t.Fatalf(
+						"Expected message to contain%#v. Got: %#v",
+						expectedText, msgCfg.Text,
+					)
+				}
+			})
+
+			err := handleDelCallbackQuery(clientMock, stMock, callbackQueryMock, dataMock)
+			if err != nil {
+				t.Errorf("Unexpected error: %#v", err)
+			}
+		})
+
+		t.Run("Item found", func(t *testing.T) {
+			// Interface mocks
+			clientMock.EXPECT().AnswerCallbackQuery(
+				gomock.Any(),
+			).Do(generateCallbackQueryIDChecker(t))
+			stMock.EXPECT().GetShoppingItem(expectedItemID).Return(item, nil)
+			stMock.EXPECT().DeleteShoppingItem(expectedItemID).Return(nil)
+
+			sendHideKeybaordCall := clientMock.EXPECT().Send(gomock.Any())
+			sendHideKeybaordCall.Do(generateSendHideKeybaordCallChecker(t))
+			sendTextCall := clientMock.EXPECT().Send(gomock.Any())
+			sendTextCall.Do(func(msgCfg tgbotapi.MessageConfig) {
+				if msgCfg.ChatID != callbackQueryMock.Message.Chat.ID {
+					t.Errorf(
+						"Expected to reply to the chat with ID %d, but reply sent to %d",
+						msgCfg.ChatID,
+						callbackQueryMock.Message.Chat.ID,
+					)
+				}
+
+				if !strings.Contains(msgCfg.Text, item.Name) {
+					t.Fatalf(
+						"Expected message to contain the item name: %#v, got: %#v",
+						item.Name, msgCfg.Text,
+					)
+				}
+			})
+
+			err := handleDelCallbackQuery(clientMock, stMock, callbackQueryMock, dataMock)
+			if err != nil {
+				t.Errorf("Unexpected error: %#v", err)
+			}
+		})
+
 	})
 }

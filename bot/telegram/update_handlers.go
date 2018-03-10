@@ -234,7 +234,6 @@ func handleDelCallbackQuery(
 			data, err)
 	}
 
-	var text string
 	item, err := st.GetShoppingItem(itemID)
 	if err != nil {
 		return fmt.Errorf(
@@ -242,6 +241,7 @@ func handleDelCallbackQuery(
 			itemID, err)
 	}
 
+	var text string
 	if item != nil {
 		err := st.DeleteShoppingItem(itemID)
 		if err != nil {
@@ -261,11 +261,16 @@ func handleDelCallbackQuery(
 
 	// Edit previous message to hide the keyboard
 	{
+		// It's important to send replyMarkup exactly like this,
+		// because otherwise telegram clients will not hide the keybaord
+		replyMarkup := tgbotapi.NewInlineKeyboardMarkup(
+			[]tgbotapi.InlineKeyboardButton{},
+		)
 		msg := tgbotapi.NewEditMessageReplyMarkup(
 			chatID,
 			messageID,
-			tgbotapi.NewInlineKeyboardMarkup(
-				[]tgbotapi.InlineKeyboardButton{}))
+			replyMarkup,
+		)
 		client.Send(msg)
 	}
 
