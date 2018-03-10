@@ -194,9 +194,11 @@ func handleDel(
 	} else {
 		for _, item := range chatItems {
 			callbackData := joinCallbackQueryData(
-				"del", strconv.FormatInt(item.ID, 10))
+				commandDel, strconv.FormatInt(item.ID, 10),
+			)
 			itemButtonRow := tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData(item.Name, callbackData))
+				tgbotapi.NewInlineKeyboardButtonData(item.Name, callbackData),
+			)
 			itemButtonRows = append(itemButtonRows, itemButtonRow)
 		}
 

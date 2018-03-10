@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -393,5 +394,112 @@ func TestHandleAddSession(t *testing.T) {
 			}
 		}
 
+	})
+}
+
+func TestHandleDel(t *testing.T) {
+	// Common interface mocks
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	clientMock := mock_telegram.NewMocksender(mockCtrl)
+	stMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
+
+	// Common data mocks
+	errMock := errors.New("fake error")
+	messageMock := &tgbotapi.Message{
+		Text: "Milk",
+		Chat: &tgbotapi.Chat{ID: 123},
+	}
+
+	t.Run("Storage error", func(t *testing.T) {
+		stMock.EXPECT().GetShoppingItems(gomock.Any()).Return(nil, errMock)
+
+		err := handleDel(clientMock, stMock, messageMock)
+
+		if !strings.Contains(err.Error(), errMock.Error()) {
+			t.Errorf("Expected err %#v, got %#v", errMock, err)
+		}
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		t.Run("Empty shopping list", func(t *testing.T) {
+			// Data mocks
+			storageDataMock := []*models.ShoppingItem{}
+
+			stMock.EXPECT().GetShoppingItems(gomock.Any()).Return(storageDataMock, nil)
+			clientMock.EXPECT().Send(gomock.Any()).Do(func(msgCfg tgbotapi.MessageConfig) {
+				if msgCfg.ChatID != messageMock.Chat.ID {
+					t.Errorf(
+						"Expected to reply to the chat with ID %d, but reply sent to %d",
+						msgCfg.ChatID,
+						messageMock.Chat.ID,
+					)
+				}
+
+				expectedText := "list is empty"
+				if !strings.Contains(msgCfg.Text, expectedText) {
+					t.Fatalf("Expected message to contain %#v", expectedText)
+				}
+			})
+
+			err := handleDel(clientMock, stMock, messageMock)
+			if err != nil {
+				t.Errorf("Unexpected err: got %#v", err)
+			}
+		})
+
+		t.Run("Shopping list with items", func(t *testing.T) {
+			// Data mocks
+			storageDataMock := []*models.ShoppingItem{
+				&models.ShoppingItem{ID: 1, Name: "Milk"},
+				&models.ShoppingItem{ID: 2, Name: "Молоко"},
+			}
+
+			stMock.EXPECT().GetShoppingItems(gomock.Any()).Return(storageDataMock, nil)
+			clientMock.EXPECT().Send(gomock.Any()).Do(func(msgCfg tgbotapi.MessageConfig) {
+				if msgCfg.ChatID != messageMock.Chat.ID {
+					t.Errorf(
+						"Expected to reply to the chat with ID %d, but reply sent to %d",
+						msgCfg.ChatID,
+						messageMock.Chat.ID,
+					)
+				}
+
+				inlineKeyboardMarkup, ok := msgCfg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup)
+				if !ok {
+					t.Fatal("Expected message to contain inline keybaord")
+				}
+
+				rowsNumber := len(inlineKeyboardMarkup.InlineKeyboard)
+				expectedRowsNumber := len(storageDataMock)
+				if rowsNumber != expectedRowsNumber {
+					t.Fatalf(
+						"Expected number of rows is %d, got %d",
+						expectedRowsNumber, rowsNumber,
+					)
+				}
+
+				for rowIndex, keyboardRow := range inlineKeyboardMarkup.InlineKeyboard {
+					for _, keyboardButton := range keyboardRow {
+						expectedCallbackData := fmt.Sprintf(
+							"%s:%d", commandDel, storageDataMock[rowIndex].ID,
+						)
+
+						if *keyboardButton.CallbackData != expectedCallbackData {
+							t.Errorf(
+								"Expected callback data is %s, got %s",
+								expectedCallbackData,
+								*keyboardButton.CallbackData,
+							)
+						}
+					}
+				}
+			})
+
+			err := handleDel(clientMock, stMock, messageMock)
+			if err != nil {
+				t.Errorf("Unexpected err: got %#v", err)
+			}
+		})
 	})
 }
