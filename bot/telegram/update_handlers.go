@@ -318,6 +318,7 @@ func handleClear(
 
 		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 			[]tgbotapi.InlineKeyboardButton{
+				// Order of the buttons in keyboard is important
 				tgbotapi.NewInlineKeyboardButtonData("Yes", yesCallbackData),
 				tgbotapi.NewInlineKeyboardButtonData("Cancel", cancelCallbackData)})
 	}
@@ -362,11 +363,16 @@ func handleClearCallbackQuery(
 
 	// Edit previous message to hide the keyboard
 	{
+		// It's important to send replyMarkup exactly like this,
+		// because otherwise telegram clients will not hide the keybaord
+		replyMarkup := tgbotapi.NewInlineKeyboardMarkup(
+			[]tgbotapi.InlineKeyboardButton{},
+		)
 		msg := tgbotapi.NewEditMessageReplyMarkup(
 			chatID,
 			messageID,
-			tgbotapi.NewInlineKeyboardMarkup(
-				[]tgbotapi.InlineKeyboardButton{}))
+			replyMarkup,
+		)
 		client.Send(msg)
 	}
 
