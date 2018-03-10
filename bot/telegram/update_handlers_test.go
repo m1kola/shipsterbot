@@ -8,7 +8,6 @@ import (
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 
 	"github.com/golang/mock/gomock"
-	"github.com/m1kola/shipsterbot/gomockhelpers"
 	"github.com/m1kola/shipsterbot/mocks/bot/mock_telegram"
 	"github.com/m1kola/shipsterbot/mocks/mock_storage"
 	"github.com/m1kola/shipsterbot/models"
@@ -23,60 +22,58 @@ func TestHelpMessages(t *testing.T) {
 	stMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
 
 	messageMock := &tgbotapi.Message{
-		From: &tgbotapi.User{
-			FirstName: "m1kola",
-		},
-		Chat: &tgbotapi.Chat{
-			ID: 123,
-		},
+		From: &tgbotapi.User{FirstName: "m1kola"},
+		Chat: &tgbotapi.Chat{ID: 123},
 		Text: "Some text",
 	}
 
-	greetingMatcher := gomockhelpers.MatcherFunc(func(x interface{}) bool {
-		msgCfg, ok := x.(tgbotapi.MessageConfig)
-		if !ok {
-			return false
+	generateGreetingChecker := func(t *testing.T) interface{} {
+		return func(msgCfg tgbotapi.MessageConfig) {
+			if msgCfg.ChatID != messageMock.Chat.ID {
+				t.Errorf(
+					"Expected to reply to the chat with ID %d, but reply sent to %d",
+					msgCfg.ChatID,
+					messageMock.Chat.ID,
+				)
+			}
+
+			expectedText := "Hi m1kola"
+			if !strings.Contains(msgCfg.Text, expectedText) {
+				t.Fatalf("Expected message to contain %#v", expectedText)
+			}
 		}
+	}
 
-		// Reply to the same chat
-		if msgCfg.ChatID != messageMock.Chat.ID {
-			return false
+	generateUnknownCommandChecker := func(t *testing.T) interface{} {
+		return func(msgCfg tgbotapi.MessageConfig) {
+			if msgCfg.ChatID != messageMock.Chat.ID {
+				t.Errorf(
+					"Expected to reply to the chat with ID %d, but reply sent to %d",
+					msgCfg.ChatID,
+					messageMock.Chat.ID,
+				)
+			}
+
+			expectedText := "m1kola, I'm very sorry"
+			if !strings.Contains(msgCfg.Text, expectedText) {
+				t.Fatalf("Expected message to contain %#v", expectedText)
+			}
 		}
-
-		if !strings.Contains(msgCfg.Text, "Hi m1kola") {
-			return false
-		}
-
-		return true
-	})
-
-	unknownCommandMatcher := gomockhelpers.MatcherFunc(func(x interface{}) bool {
-		msgCfg, ok := x.(tgbotapi.MessageConfig)
-		if !ok {
-			return false
-		}
-
-		// Reply to the same chat
-		if msgCfg.ChatID != messageMock.Chat.ID {
-			return false
-		}
-
-		if !strings.Contains(msgCfg.Text, "m1kola, I'm very sorry") {
-			return false
-		}
-
-		return true
-	})
+	}
 
 	t.Run("sendHelpMessage", func(t *testing.T) {
 		t.Run("Greeting", func(t *testing.T) {
-			clientMock.EXPECT().Send(greetingMatcher)
+			clientMock.EXPECT().Send(gomock.Any()).Do(
+				generateGreetingChecker(t),
+			)
 
 			sendHelpMessage(clientMock, messageMock, true)
 		})
 
 		t.Run("Unknown command", func(t *testing.T) {
-			clientMock.EXPECT().Send(unknownCommandMatcher)
+			clientMock.EXPECT().Send(gomock.Any()).Do(
+				generateUnknownCommandChecker(t),
+			)
 
 			sendHelpMessage(clientMock, messageMock, false)
 		})
@@ -84,7 +81,9 @@ func TestHelpMessages(t *testing.T) {
 
 	t.Run("handleStart", func(t *testing.T) {
 		t.Run("Greeting", func(t *testing.T) {
-			clientMock.EXPECT().Send(greetingMatcher)
+			clientMock.EXPECT().Send(gomock.Any()).Do(
+				generateGreetingChecker(t),
+			)
 
 			handleStart(clientMock, stMock, messageMock)
 		})
@@ -98,23 +97,20 @@ func TestHandleUnrecoverableError(t *testing.T) {
 	defer mockCtrl.Finish()
 	clientMock := mock_telegram.NewMockbotClientInterface(mockCtrl)
 
-	clientMock.EXPECT().Send(gomockhelpers.MatcherFunc(func(x interface{}) bool {
-		msgCfg, ok := x.(tgbotapi.MessageConfig)
-		if !ok {
-			return false
-		}
-
-		// Reply to the same chat
+	clientMock.EXPECT().Send(gomock.Any()).Do(func(msgCfg tgbotapi.MessageConfig) {
 		if msgCfg.ChatID != expectedChatID {
-			return false
+			t.Errorf(
+				"Expected to reply to the chat with ID %d, but reply sent to %d",
+				msgCfg.ChatID,
+				expectedChatID,
+			)
 		}
 
-		if !strings.Contains(msgCfg.Text, "Please, try again a bit later") {
-			return false
+		expectedText := "Please, try again a bit later"
+		if !strings.Contains(msgCfg.Text, expectedText) {
+			t.Fatalf("Expected message to contain %#v", expectedText)
 		}
-
-		return true
-	}))
+	})
 
 	handleUnrecoverableError(clientMock, expectedChatID, errors.New("fake err"))
 }
@@ -155,12 +151,8 @@ func TestHandleAdd(t *testing.T) {
 
 	t.Run("Storage error", func(t *testing.T) {
 		messageMock := &tgbotapi.Message{
-			Chat: &tgbotapi.Chat{
-				ID: 123,
-			},
-			From: &tgbotapi.User{
-				ID: 321,
-			},
+			Chat: &tgbotapi.Chat{ID: 123},
+			From: &tgbotapi.User{ID: 321},
 		}
 
 		stMock.EXPECT().AddUnfinishedCommand(gomock.Any()).Return(errMock)
@@ -175,38 +167,25 @@ func TestHandleAdd(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		t.Run("Private chat", func(t *testing.T) {
 			messageMock := &tgbotapi.Message{
-				Chat: &tgbotapi.Chat{
-					ID:   123,
-					Type: "private",
-				},
-				From: &tgbotapi.User{
-					ID:        321,
-					FirstName: "m1kola",
-				},
+				Chat: &tgbotapi.Chat{ID: 123, Type: "private"},
+				From: &tgbotapi.User{ID: 321, FirstName: "m1kola"},
 			}
 
 			stMock.EXPECT().AddUnfinishedCommand(gomock.Any()).Return(nil)
-			clientMock.EXPECT().Send(gomockhelpers.MatcherFunc(func(x interface{}) bool {
-				msgCfg, ok := x.(tgbotapi.MessageConfig)
-				if !ok {
-					return false
-				}
-
-				// Reply to the same chat
+			clientMock.EXPECT().Send(gomock.Any()).Do(func(msgCfg tgbotapi.MessageConfig) {
 				if msgCfg.ChatID != messageMock.Chat.ID {
-					return false
+					t.Errorf(
+						"Expected to reply to the chat with ID %d, but reply sent to %d",
+						msgCfg.ChatID,
+						messageMock.Chat.ID,
+					)
 				}
 
-				// If replyMarkup is present, check that
-				// bot is NOT forcing a client to reply
-				if replyMarkup, ok := msgCfg.ReplyMarkup.(tgbotapi.ForceReply); ok {
-					if !replyMarkup.ForceReply || !replyMarkup.Selective {
-						return false
-					}
+				replyMarkup, ok := msgCfg.ReplyMarkup.(tgbotapi.ForceReply)
+				if ok && replyMarkup.ForceReply && replyMarkup.Selective {
+					t.Error("Expected bot to not force clients to reply in a private chat")
 				}
-
-				return true
-			}))
+			})
 
 			err := handleAdd(clientMock, stMock, messageMock)
 
@@ -217,39 +196,25 @@ func TestHandleAdd(t *testing.T) {
 
 		t.Run("Group chat", func(t *testing.T) {
 			messageMock := &tgbotapi.Message{
-				Chat: &tgbotapi.Chat{
-					ID:   123,
-					Type: "group",
-				},
-				From: &tgbotapi.User{
-					ID:        321,
-					FirstName: "m1kola",
-				},
+				Chat: &tgbotapi.Chat{ID: 123, Type: "group"},
+				From: &tgbotapi.User{ID: 321, FirstName: "m1kola"},
 			}
 
 			stMock.EXPECT().AddUnfinishedCommand(gomock.Any()).Return(nil)
-			clientMock.EXPECT().Send(gomockhelpers.MatcherFunc(func(x interface{}) bool {
-				msgCfg, ok := x.(tgbotapi.MessageConfig)
-				if !ok {
-					return false
-				}
-
-				// Reply to the same chat
+			clientMock.EXPECT().Send(gomock.Any()).Do(func(msgCfg tgbotapi.MessageConfig) {
 				if msgCfg.ChatID != messageMock.Chat.ID {
-					return false
+					t.Errorf(
+						"Expected to reply to the chat with ID %d, but reply sent to %d",
+						msgCfg.ChatID,
+						messageMock.Chat.ID,
+					)
 				}
 
-				// Check that bot is forcing a client to reply
 				replyMarkup, ok := msgCfg.ReplyMarkup.(tgbotapi.ForceReply)
-				if !ok {
-					return false
+				if !ok || !replyMarkup.ForceReply || !replyMarkup.Selective {
+					t.Error("Expected bot to force clients to reply in a group chat")
 				}
-				if !replyMarkup.ForceReply || !replyMarkup.Selective {
-					return false
-				}
-
-				return true
-			}))
+			})
 
 			err := handleAdd(clientMock, stMock, messageMock)
 
@@ -270,12 +235,8 @@ func TestHandleList(t *testing.T) {
 	// Common data mocks
 	errMock := errors.New("fake error")
 	messageMock := &tgbotapi.Message{
-		Chat: &tgbotapi.Chat{
-			ID: 123,
-		},
-		From: &tgbotapi.User{
-			ID: 321,
-		},
+		Chat: &tgbotapi.Chat{ID: 123},
+		From: &tgbotapi.User{ID: 321},
 	}
 
 	t.Run("Storage error", func(t *testing.T) {
@@ -294,23 +255,20 @@ func TestHandleList(t *testing.T) {
 			storageDataMock := []*models.ShoppingItem{}
 
 			stMock.EXPECT().GetShoppingItems(gomock.Any()).Return(storageDataMock, nil)
-			clientMock.EXPECT().Send(gomockhelpers.MatcherFunc(func(x interface{}) bool {
-				msgCfg, ok := x.(tgbotapi.MessageConfig)
-				if !ok {
-					return false
-				}
-
-				// Reply to the same chat
+			clientMock.EXPECT().Send(gomock.Any()).Do(func(msgCfg tgbotapi.MessageConfig) {
 				if msgCfg.ChatID != messageMock.Chat.ID {
-					return false
+					t.Errorf(
+						"Expected to reply to the chat with ID %d, but reply sent to %d",
+						msgCfg.ChatID,
+						messageMock.Chat.ID,
+					)
 				}
 
-				if !strings.Contains(msgCfg.Text, "list is empty") {
-					return false
+				expectedText := "list is empty"
+				if !strings.Contains(msgCfg.Text, expectedText) {
+					t.Fatalf("Expected message to contain %#v", expectedText)
 				}
-
-				return true
-			}))
+			})
 
 			err := handleList(clientMock, stMock, messageMock)
 
@@ -322,34 +280,27 @@ func TestHandleList(t *testing.T) {
 		t.Run("Shopping list with items", func(t *testing.T) {
 			// Data mocks
 			storageDataMock := []*models.ShoppingItem{
-				&models.ShoppingItem{
-					Name: "Milk",
-				},
-				&models.ShoppingItem{
-					Name: "Молоко",
-				},
+				&models.ShoppingItem{Name: "Milk"},
+				&models.ShoppingItem{Name: "Молоко"},
 			}
 
 			stMock.EXPECT().GetShoppingItems(gomock.Any()).Return(storageDataMock, nil)
-			clientMock.EXPECT().Send(gomockhelpers.MatcherFunc(func(x interface{}) bool {
-				msgCfg, ok := x.(tgbotapi.MessageConfig)
-				if !ok {
-					return false
-				}
-
-				// Reply to the same chat
+			clientMock.EXPECT().Send(gomock.Any()).Do(func(msgCfg tgbotapi.MessageConfig) {
 				if msgCfg.ChatID != messageMock.Chat.ID {
-					return false
+					t.Errorf(
+						"Expected to reply to the chat with ID %d, but reply sent to %d",
+						msgCfg.ChatID,
+						messageMock.Chat.ID,
+					)
 				}
 
+				// Chec if all items are present in the message
 				for _, dataItem := range storageDataMock {
 					if !strings.Contains(msgCfg.Text, dataItem.Name) {
-						return false
+						t.Errorf("Expected message to contain %#v", dataItem.Name)
 					}
 				}
-
-				return true
-			}))
+			})
 
 			err := handleList(clientMock, stMock, messageMock)
 
