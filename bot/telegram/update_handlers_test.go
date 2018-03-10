@@ -603,27 +603,6 @@ func TestHandleDelCallbackQuery(t *testing.T) {
 		dataMock := strconv.FormatInt(expectedItemID, 10)
 		item := &models.ShoppingItem{Name: "Milk"}
 
-		generateSendHideKeybaordCallChecker := func(t *testing.T) interface{} {
-			return func(msgCfg tgbotapi.EditMessageReplyMarkupConfig) {
-				if msgCfg.ChatID != callbackQueryMock.Message.Chat.ID {
-					t.Errorf(
-						"Expected to reply to the chat with ID %d, but reply sent to %d",
-						msgCfg.ChatID,
-						callbackQueryMock.Message.Chat.ID,
-					)
-				}
-
-				hasOneRow := len(msgCfg.ReplyMarkup.InlineKeyboard) == 1
-				firstRowIsEmpty := len(msgCfg.ReplyMarkup.InlineKeyboard[0]) == 1
-				if hasOneRow && firstRowIsEmpty {
-					t.Error(
-						"Expected the message update to contain empty inline",
-						"keyboard layout to hide the keybaord",
-					)
-				}
-			}
-		}
-
 		t.Run("Item wasn't found", func(t *testing.T) {
 			// Interface mocks
 			clientMock.EXPECT().AnswerCallbackQuery(
@@ -632,7 +611,9 @@ func TestHandleDelCallbackQuery(t *testing.T) {
 			stMock.EXPECT().GetShoppingItem(expectedItemID).Return(nil, nil)
 
 			sendHideKeybaordCall := clientMock.EXPECT().Send(gomock.Any())
-			sendHideKeybaordCall.Do(generateSendHideKeybaordCallChecker(t))
+			sendHideKeybaordCall.Do(
+				generateSendHideKeybaordCallChecker(t, callbackQueryMock),
+			)
 			sendTextCall := clientMock.EXPECT().Send(gomock.Any())
 			sendTextCall.Do(func(msgCfg tgbotapi.MessageConfig) {
 				if msgCfg.ChatID != callbackQueryMock.Message.Chat.ID {
@@ -667,7 +648,9 @@ func TestHandleDelCallbackQuery(t *testing.T) {
 			stMock.EXPECT().DeleteShoppingItem(expectedItemID).Return(nil)
 
 			sendHideKeybaordCall := clientMock.EXPECT().Send(gomock.Any())
-			sendHideKeybaordCall.Do(generateSendHideKeybaordCallChecker(t))
+			sendHideKeybaordCall.Do(
+				generateSendHideKeybaordCallChecker(t, callbackQueryMock),
+			)
 			sendTextCall := clientMock.EXPECT().Send(gomock.Any())
 			sendTextCall.Do(func(msgCfg tgbotapi.MessageConfig) {
 				if msgCfg.ChatID != callbackQueryMock.Message.Chat.ID {
@@ -768,28 +751,6 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		// TODO: Share with TestHandleDelCallbackQuery?
-		generateSendHideKeybaordCallChecker := func(t *testing.T) interface{} {
-			return func(msgCfg tgbotapi.EditMessageReplyMarkupConfig) {
-				if msgCfg.ChatID != callbackQueryMock.Message.Chat.ID {
-					t.Errorf(
-						"Expected to reply to the chat with ID %d, but reply sent to %d",
-						msgCfg.ChatID,
-						callbackQueryMock.Message.Chat.ID,
-					)
-				}
-
-				hasOneRow := len(msgCfg.ReplyMarkup.InlineKeyboard) == 1
-				firstRowIsEmpty := len(msgCfg.ReplyMarkup.InlineKeyboard[0]) == 1
-				if hasOneRow && firstRowIsEmpty {
-					t.Error(
-						"Expected the message update to contain empty inline",
-						"keyboard layout to hide the keybaord",
-					)
-				}
-			}
-		}
-
 		t.Run("User confirms deletion", func(t *testing.T) {
 			// Interface mocks
 			clientMock.EXPECT().AnswerCallbackQuery(
@@ -800,7 +761,9 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 			).Return(nil)
 
 			sendHideKeybaordCall := clientMock.EXPECT().Send(gomock.Any())
-			sendHideKeybaordCall.Do(generateSendHideKeybaordCallChecker(t))
+			sendHideKeybaordCall.Do(
+				generateSendHideKeybaordCallChecker(t, callbackQueryMock),
+			)
 			sendTextCall := clientMock.EXPECT().Send(gomock.Any())
 			sendTextCall.Do(func(msgCfg tgbotapi.MessageConfig) {
 				if msgCfg.ChatID != callbackQueryMock.Message.Chat.ID {
@@ -835,7 +798,9 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 			).Do(generateCallbackQueryIDChecker(t))
 
 			sendHideKeybaordCall := clientMock.EXPECT().Send(gomock.Any())
-			sendHideKeybaordCall.Do(generateSendHideKeybaordCallChecker(t))
+			sendHideKeybaordCall.Do(
+				generateSendHideKeybaordCallChecker(t, callbackQueryMock),
+			)
 			sendTextCall := clientMock.EXPECT().Send(gomock.Any())
 			sendTextCall.Do(func(msgCfg tgbotapi.MessageConfig) {
 				if msgCfg.ChatID != callbackQueryMock.Message.Chat.ID {
@@ -864,4 +829,30 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 		})
 
 	})
+}
+
+// --- Utils
+
+func generateSendHideKeybaordCallChecker(
+	t *testing.T,
+	callbackQueryMock *tgbotapi.CallbackQuery,
+) interface{} {
+	return func(msgCfg tgbotapi.EditMessageReplyMarkupConfig) {
+		if msgCfg.ChatID != callbackQueryMock.Message.Chat.ID {
+			t.Errorf(
+				"Expected to reply to the chat with ID %d, but reply sent to %d",
+				msgCfg.ChatID,
+				callbackQueryMock.Message.Chat.ID,
+			)
+		}
+
+		hasOneRow := len(msgCfg.ReplyMarkup.InlineKeyboard) == 1
+		firstRowIsEmpty := len(msgCfg.ReplyMarkup.InlineKeyboard[0]) == 1
+		if hasOneRow && firstRowIsEmpty {
+			t.Error(
+				"Expected the message update to contain empty inline",
+				"keyboard layout to hide the keybaord",
+			)
+		}
+	}
 }
