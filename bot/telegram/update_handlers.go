@@ -259,7 +259,7 @@ func handleDelCallbackQuery(
 		text = "Can't find an item, sorry."
 	}
 
-	hideInlineKeybaord(client, chatID, messageID)
+	hideInlineKeyboard(client, chatID, messageID)
 
 	// Send deletion confimration text
 	msg := tgbotapi.NewMessage(chatID, text)
@@ -346,7 +346,7 @@ func handleClearCallbackQuery(
 		text = "Canceling. Your items are still in your list."
 	}
 
-	hideInlineKeybaord(client, chatID, messageID)
+	hideInlineKeyboard(client, chatID, messageID)
 
 	// Send deletion confimration text
 	msg := tgbotapi.NewMessage(chatID, text)
@@ -355,9 +355,9 @@ func handleClearCallbackQuery(
 	return nil
 }
 
-// hideInlineKeybaord makes the telegram client to hide inline keybaord
+// hideInlineKeyboard makes the telegram client to hide inline keybaord
 // by editing a message with `messageID` in in a chat with `chatID`
-func hideInlineKeybaord(client botClientInterface, chatID int64, messageID int) {
+func hideInlineKeyboard(client botClientInterface, chatID int64, messageID int) {
 	// It's important to send replyMarkup exactly like this,
 	// because otherwise telegram clients will not hide the keybaord
 	replyMarkup := tgbotapi.NewInlineKeyboardMarkup(
