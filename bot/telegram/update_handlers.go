@@ -6,7 +6,7 @@ import (
 
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 
-	"github.com/m1kola/shipsterbot/models"
+	"github.com/m1kola/shipsterbot/internal/pkg/models"
 	"github.com/m1kola/shipsterbot/internal/pkg/storage"
 )
 

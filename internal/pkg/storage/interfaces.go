@@ -1,6 +1,6 @@
 package storage
 
-import "github.com/m1kola/shipsterbot/models"
+import "github.com/m1kola/shipsterbot/internal/pkg/models"
 
 // Generates mocks for tests
 //go:generate mockgen -source=$GOFILE -destination=../mocks/mock_$GOPACKAGE/$GOFILE -package=mock_$GOPACKAGE

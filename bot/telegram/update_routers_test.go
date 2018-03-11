@@ -11,7 +11,7 @@ import (
 
 	"github.com/m1kola/shipsterbot/internal/pkg/mocks/bot/mock_telegram"
 	"github.com/m1kola/shipsterbot/internal/pkg/mocks/mock_storage"
-	"github.com/m1kola/shipsterbot/models"
+	"github.com/m1kola/shipsterbot/internal/pkg/models"
 	"github.com/m1kola/shipsterbot/internal/pkg/storage"
 )
 

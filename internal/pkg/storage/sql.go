@@ -3,7 +3,7 @@ package storage
 import (
 	"database/sql"
 
-	"github.com/m1kola/shipsterbot/models"
+	"github.com/m1kola/shipsterbot/internal/pkg/models"
 )
 
 // SQLStorage implements the DataStorageInterface

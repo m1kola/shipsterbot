@@ -6,7 +6,7 @@ package mock_storage
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	models "github.com/m1kola/shipsterbot/models"
+	models "github.com/m1kola/shipsterbot/internal/pkg/models"
 	reflect "reflect"
 )
 
