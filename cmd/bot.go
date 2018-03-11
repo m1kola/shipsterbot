@@ -8,7 +8,7 @@ import (
 
 	"github.com/m1kola/shipsterbot/bot/telegram"
 	"github.com/m1kola/shipsterbot/env"
-	"github.com/m1kola/shipsterbot/storage"
+	"github.com/m1kola/shipsterbot/internal/pkg/storage"
 )
 
 func init() {

@@ -12,7 +12,7 @@ import (
 	"github.com/m1kola/shipsterbot/mocks/bot/mock_telegram"
 	"github.com/m1kola/shipsterbot/mocks/mock_storage"
 	"github.com/m1kola/shipsterbot/models"
-	"github.com/m1kola/shipsterbot/storage"
+	"github.com/m1kola/shipsterbot/internal/pkg/storage"
 )
 
 func TestRouteUpdates(t *testing.T) {

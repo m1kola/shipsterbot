@@ -7,7 +7,7 @@ import (
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 
 	"github.com/m1kola/shipsterbot/models"
-	"github.com/m1kola/shipsterbot/storage"
+	"github.com/m1kola/shipsterbot/internal/pkg/storage"
 )
 
 var sendHelpMessage = func(client sender, message *tgbotapi.Message, isStart bool) {

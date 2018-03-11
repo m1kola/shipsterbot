@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/m1kola/shipsterbot/storage"
+	"github.com/m1kola/shipsterbot/internal/pkg/storage"
 )
 
 type webHookServerConfig struct {

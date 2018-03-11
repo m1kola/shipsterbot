@@ -7,7 +7,7 @@ import (
 
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 
-	"github.com/m1kola/shipsterbot/storage"
+	"github.com/m1kola/shipsterbot/internal/pkg/storage"
 )
 
 // routeUpdates receives updates and starts goroutines to route them
