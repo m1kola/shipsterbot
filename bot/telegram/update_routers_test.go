@@ -265,9 +265,9 @@ func TestRouteErrors(t *testing.T) {
 		}
 	})
 
-	t.Run("error is handlerCanNotHandleError", func(t *testing.T) {
+	t.Run("error is updateRoutingError", func(t *testing.T) {
 		// Data mocks
-		errMock := handlerCanNotHandleError{
+		errMock := updateRoutingError{
 			errors.New("fake error")}
 
 		// Function mocks
@@ -355,8 +355,8 @@ func TestRouteCallbackQuery(t *testing.T) {
 			}
 
 			err := routeCallbackQuery(clientMock, stMock, callbackQueryMock)
-			if _, ok := err.(handlerCanNotHandleError); !ok {
-				t.Fatalf("expected %T got %T", handlerCanNotHandleError{}, err)
+			if _, ok := err.(updateRoutingError); !ok {
+				t.Fatalf("expected %T got %T", updateRoutingError{}, err)
 			}
 		})
 	})
@@ -368,8 +368,8 @@ func TestRouteCallbackQuery(t *testing.T) {
 		}
 
 		err := routeCallbackQuery(clientMock, stMock, callbackQueryMock)
-		if _, ok := err.(handlerCanNotHandleError); !ok {
-			t.Fatalf("expected %T got %T", handlerCanNotHandleError{}, err)
+		if _, ok := err.(updateRoutingError); !ok {
+			t.Fatalf("expected %T got %T", updateRoutingError{}, err)
 		}
 	})
 }
@@ -402,7 +402,7 @@ func TestRouteMessage(t *testing.T) {
 
 	t.Run("Proxy errors from routeMessageEntities", func(t *testing.T) {
 
-		t.Run("handlerCanNotHandleError", func(t *testing.T) {
+		t.Run("updateRoutingError", func(t *testing.T) {
 			// Sould expect an error from routeMessageText
 
 			t.Run("errCommandIsNotSupported", func(t *testing.T) {
@@ -421,7 +421,7 @@ func TestRouteMessage(t *testing.T) {
 			})
 		})
 
-		t.Run("Non-handlerCanNotHandleError", func(t *testing.T) {
+		t.Run("Non-updateRoutingError", func(t *testing.T) {
 			// Data mocks
 			errMock := errors.New("Fake error")
 
@@ -439,9 +439,9 @@ func TestRouteMessage(t *testing.T) {
 
 	t.Run("Proxy errors from routeMessageText", func(t *testing.T) {
 		// Data mocks
-		errFromrouteMessageTextMock := handlerCanNotHandleError{
+		errFromrouteMessageTextMock := updateRoutingError{
 			errors.New("Expected fake error")}
-		errFromRouteMessageEntities := handlerCanNotHandleError{
+		errFromRouteMessageEntities := updateRoutingError{
 			errors.New("Fake error")}
 
 		// Function mocks
@@ -501,9 +501,9 @@ func TestRouteMessageEntities(t *testing.T) {
 		messageMock := &tgbotapi.Message{}
 
 		err := routeMessageEntities(clientMock, stMock, messageMock)
-		if _, ok := err.(handlerCanNotHandleError); !ok {
+		if _, ok := err.(updateRoutingError); !ok {
 			t.Fatalf("Expected error of type %T, got %T",
-				handlerCanNotHandleError{}, err)
+				updateRoutingError{}, err)
 		}
 	})
 
@@ -605,8 +605,8 @@ func TestRouteMessageText(t *testing.T) {
 
 			err := routeMessageText(clientMock, stMock, messageMock)
 
-			if _, ok := err.(handlerCanNotHandleError); !ok {
-				t.Fatalf("expected error of %T, got %T", handlerCanNotHandleError{}, err)
+			if _, ok := err.(updateRoutingError); !ok {
+				t.Fatalf("expected error of %T, got %T", updateRoutingError{}, err)
 			}
 
 			expectedMessage := "Can't find unfinished commands"
@@ -630,8 +630,8 @@ func TestRouteMessageText(t *testing.T) {
 
 			err := routeMessageText(clientMock, stMock, messageMock)
 
-			if _, ok := err.(handlerCanNotHandleError); !ok {
-				t.Fatalf("expected error of %T, got %T", handlerCanNotHandleError{}, err)
+			if _, ok := err.(updateRoutingError); !ok {
+				t.Fatalf("expected error of %T, got %T", updateRoutingError{}, err)
 			}
 
 			expectedMessage := "Unable to find a handler for the message"

@@ -60,7 +60,7 @@ var routeErrors = func(
 
 	// It's ok if we can't handle a message, because an user can send nonsense.
 	// Let's send a message saying that we don't understand the input.
-	if _, ok := err.(handlerCanNotHandleError); ok {
+	if _, ok := err.(updateRoutingError); ok {
 		if len(message.Text) > 0 {
 			// Send help text only if we've received a message text: we don't
 			// want to reply to service messages
@@ -88,13 +88,13 @@ var routeCallbackQuery = func(
 ) error {
 	botCommand, payload, err := splitCallbackQueryData(callbackQuery.Data)
 	if err != nil {
-		return handlerCanNotHandleError{
+		return updateRoutingError{
 			fmt.Errorf("CallbackQuery data error: %s", err)}
 	}
 
 	i, ok := getBotCommandsMapping()[botCommand]
 	if !ok {
-		return handlerCanNotHandleError{
+		return updateRoutingError{
 			fmt.Errorf("Unable to find a handler for CallbackQuery: %v",
 				callbackQuery.Data)}
 	}
@@ -115,8 +115,8 @@ var routeMessage = func(
 
 	err := routeMessageEntities(client, st, message)
 	// We should only try to continue processing an message,
-	// if we receive an handlerCanNotHandleError error.
-	if _, ok := err.(handlerCanNotHandleError); !ok {
+	// if we receive an updateRoutingError error.
+	if _, ok := err.(updateRoutingError); !ok {
 		return err
 	}
 
@@ -140,7 +140,7 @@ var routeMessageEntities = func(
 	message *tgbotapi.Message,
 ) error {
 	if message.Entities == nil {
-		return handlerCanNotHandleError{
+		return updateRoutingError{
 			errors.New("Message doesn't have entities to handle")}
 	}
 	botCommand := message.Command()
@@ -177,7 +177,7 @@ var routeMessageText = func(
 		// Unfinished command doesn't exist. It's ok,
 		// but we need to return an error just to indicate that
 		// we didn't manage to handele this message
-		return handlerCanNotHandleError{
+		return updateRoutingError{
 			fmt.Errorf(
 				"Can't find unfinished commands (ChatID=%d and UserId=%d)",
 				message.Chat.ID, message.From.ID)}
@@ -185,7 +185,7 @@ var routeMessageText = func(
 
 	i, ok := getBotCommandsMapping()[session.Command]
 	if !ok {
-		return handlerCanNotHandleError{
+		return updateRoutingError{
 			errors.New("Unable to find a handler for the message")}
 	}
 
