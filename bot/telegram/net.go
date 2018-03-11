@@ -19,10 +19,9 @@ func ValidateWebhookPort(port string) error {
 		}
 	}
 
-	err := fmt.Errorf(
+	return fmt.Errorf(
 		"Wrong port. You can only use one of the following ports: %s",
 		strings.Join(allowedPorts, ", "))
-	return err
 }
 
 // newServerWithIncommingRequstLogger creates a new server struct
@@ -31,8 +30,7 @@ func newServerWithIncommingRequstLogger(port string, handler http.Handler) *http
 	newHandler := incommingRequstLogger(handler)
 	addr := fmt.Sprintf(":%s", port)
 
-	server := &http.Server{Addr: addr, Handler: newHandler}
-	return server
+	return &http.Server{Addr: addr, Handler: newHandler}
 }
 
 // listenAndServe makes the server start handling requests.

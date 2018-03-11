@@ -13,9 +13,7 @@ func NewAPIClient(token string) (*APIClient, error) {
 		return nil, err
 	}
 
-	wrapper := &APIClient{&apiClientWrapper{client}}
-
-	return wrapper, nil
+	return &APIClient{&apiClientWrapper{client}}, nil
 }
 
 // APIClient is a wrapper around the tgbotapi

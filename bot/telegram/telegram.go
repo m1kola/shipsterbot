@@ -33,13 +33,11 @@ func NewBotApp(
 		TLSKeyPath:  TLSKeyPath,
 	}
 
-	botApp := BotApp{
+	return &BotApp{
 		bot:          tgbot.botClient,
 		storage:      storage,
 		serverConfig: serverConfig,
 	}
-
-	return &botApp
 }
 
 // StartBotApp starts the  bot

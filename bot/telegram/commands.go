@@ -46,7 +46,7 @@ type botCommand struct {
 }
 
 var getBotCommandsMapping = func() map[string]botCommand {
-	botCommands := map[string]botCommand{
+	return map[string]botCommand{
 		// The `/start` command is implicit: Telegram sends on user's behalf
 		// when they start the bot.
 		commandStart: botCommand{
@@ -81,8 +81,6 @@ var getBotCommandsMapping = func() map[string]botCommand {
 			callbackQueryHandler: callbackQueryHandlerFunc(handleClearCallbackQuery),
 		},
 	}
-
-	return botCommands
 }
 
 type commandHandler interface {

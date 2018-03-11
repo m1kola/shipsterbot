@@ -14,8 +14,7 @@ type SQLStorage struct {
 
 // NewSQLStorage initialises a new NewSQLStorage instance
 func NewSQLStorage(db *sql.DB) *SQLStorage {
-	storage := SQLStorage{db: db}
-	return &storage
+	return &SQLStorage{db: db}
 }
 
 // AddUnfinishedCommand inserts an unfinished operaiont into the storage
