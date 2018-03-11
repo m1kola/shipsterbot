@@ -67,7 +67,7 @@ MIGRATIONS_BINDATA_PATH := $(BASE)/migrations/bindata.go
 .PHONY: migrations
 migrations: | $(GOBINDATA)
 	cd $(BASE) && \
-	cd ./migrations && $(GOBINDATA) -pkg migrations .
+	cd ./internal/migrations && $(GOBINDATA) -pkg migrations .
 
 
 # Run go generate (generates mocks, etc)

@@ -15,8 +15,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/m1kola/shipsterbot/internal/migrations"
 	"github.com/m1kola/shipsterbot/internal/pkg/env"
-	"github.com/m1kola/shipsterbot/migrations"
 )
 
 func init() {
