@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/m1kola/shipsterbot/mocks/bot/mock_telegram"
+	"github.com/m1kola/shipsterbot/internal/pkg/mocks/bot/mock_telegram"
 )
 
 func TestValidateWebhookPort(t *testing.T) {
