@@ -3,7 +3,7 @@ package env
 import (
 	"os"
 
-	"github.com/m1kola/shipsterbot/bot/telegram"
+	"github.com/m1kola/shipsterbot/internal/bot/telegram"
 )
 
 // GetTelegramAPIToken returns telegram bot api token

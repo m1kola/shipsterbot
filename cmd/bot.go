@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/m1kola/shipsterbot/bot/telegram"
+	"github.com/m1kola/shipsterbot/internal/bot/telegram"
 	"github.com/m1kola/shipsterbot/internal/pkg/env"
 	"github.com/m1kola/shipsterbot/internal/pkg/storage"
 )
