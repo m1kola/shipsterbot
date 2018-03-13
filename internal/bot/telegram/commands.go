@@ -50,45 +50,45 @@ var getBotCommandsMapping = func() map[string]botCommand {
 		// The `/start` command is implicit: Telegram sends on user's behalf
 		// when they start the bot.
 		commandStart: botCommand{
-			commandHandler: commandHandlerFunc(handleStart),
+			commandHandler: handleStart,
 		},
 		commandHelp: botCommand{
 			description:       "Show the list of available commands and short descriptions",
 			showInHelpMessage: true,
-			commandHandler:    commandHandlerFunc(handleStart),
+			commandHandler:    handleStart,
 		},
 		commandAdd: botCommand{
 			description:              "Add an item into your shopping list",
 			showInHelpMessage:        true,
-			commandHandler:           commandHandlerFunc(handleAdd),
-			unfinishedCommandHandler: commandHandlerFunc(handleAddSession),
+			commandHandler:           handleAdd,
+			unfinishedCommandHandler: handleAddSession,
 		},
 		commandList: botCommand{
 			description:       "Display items the shopping list",
 			showInHelpMessage: true,
-			commandHandler:    commandHandlerFunc(handleList),
+			commandHandler:    handleList,
 		},
 		commandDel: botCommand{
 			description:          "Delete an item from your shopping list",
 			showInHelpMessage:    true,
-			commandHandler:       commandHandlerFunc(handleDel),
-			callbackQueryHandler: callbackQueryHandlerFunc(handleDelCallbackQuery),
+			commandHandler:       handleDel,
+			callbackQueryHandler: handleDelCallbackQuery,
 		},
 		commandClear: botCommand{
 			description:          "Delete all items from the shopping list",
 			showInHelpMessage:    true,
-			commandHandler:       commandHandlerFunc(handleClear),
-			callbackQueryHandler: callbackQueryHandlerFunc(handleClearCallbackQuery),
+			commandHandler:       handleClear,
+			callbackQueryHandler: handleClearCallbackQuery,
 		},
 	}
 }
 
-// commandHandlerFunc makes a func to implement commandHandler
+// commandHandlerFunc defines required signature for a command handler func
 type commandHandlerFunc func(
 	client sender, st storage.DataStorageInterface, message *tgbotapi.Message,
 ) error
 
-// callbackQueryHandlerFunc makes a func to implement callbackQueryHandler
+// callbackQueryHandlerFunc defines required signature for a callback query func
 type callbackQueryHandlerFunc func(
 	client botClientInterface,
 	st storage.DataStorageInterface,
