@@ -40,9 +40,9 @@ const (
 type botCommand struct {
 	description              string
 	showInHelpMessage        bool
-	commandHandler           commandHandler
-	unfinishedCommandHandler commandHandler
-	callbackQueryHandler     callbackQueryHandler
+	commandHandler           commandHandlerFunc
+	unfinishedCommandHandler commandHandlerFunc
+	callbackQueryHandler     callbackQueryHandlerFunc
 }
 
 var getBotCommandsMapping = func() map[string]botCommand {
@@ -83,41 +83,10 @@ var getBotCommandsMapping = func() map[string]botCommand {
 	}
 }
 
-type commandHandler interface {
-	HandleCommand(
-		client sender,
-		st storage.DataStorageInterface,
-		message *tgbotapi.Message,
-	) error
-}
-
-type unfinishedCommandHandler interface {
-	HandleUnfinishedCommand(
-		client sender,
-		st storage.DataStorageInterface,
-		message *tgbotapi.Message,
-	) error
-}
-
-type callbackQueryHandler interface {
-	HandleCallbackQuery(
-		client botClientInterface,
-		st storage.DataStorageInterface,
-		callbackQuery *tgbotapi.CallbackQuery,
-		data string,
-	) error
-}
-
 // commandHandlerFunc makes a func to implement commandHandler
 type commandHandlerFunc func(
 	client sender, st storage.DataStorageInterface, message *tgbotapi.Message,
 ) error
-
-func (f commandHandlerFunc) HandleCommand(
-	client sender, st storage.DataStorageInterface, message *tgbotapi.Message,
-) error {
-	return f(client, st, message)
-}
 
 // callbackQueryHandlerFunc makes a func to implement callbackQueryHandler
 type callbackQueryHandlerFunc func(
@@ -126,12 +95,3 @@ type callbackQueryHandlerFunc func(
 	callbackQuery *tgbotapi.CallbackQuery,
 	data string,
 ) error
-
-func (f callbackQueryHandlerFunc) HandleCallbackQuery(
-	client botClientInterface,
-	st storage.DataStorageInterface,
-	callbackQuery *tgbotapi.CallbackQuery,
-	data string,
-) error {
-	return f(client, st, callbackQuery, data)
-}

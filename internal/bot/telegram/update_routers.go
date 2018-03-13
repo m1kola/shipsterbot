@@ -99,7 +99,7 @@ var routeCallbackQuery = func(
 				callbackQuery.Data)}
 	}
 
-	return i.callbackQueryHandler.HandleCallbackQuery(client, st, callbackQuery, payload)
+	return i.callbackQueryHandler(client, st, callbackQuery, payload)
 }
 
 // routeMessage routes text messages
@@ -150,7 +150,7 @@ var routeMessageEntities = func(
 		return errCommandIsNotSupported
 	}
 
-	return i.commandHandler.HandleCommand(client, st, message)
+	return i.commandHandler(client, st, message)
 }
 
 // routeMessageText routes messages to a specific handler
@@ -195,5 +195,5 @@ var routeMessageText = func(
 			message.Chat.ID, message.From.ID, err)
 	}
 
-	return i.unfinishedCommandHandler.HandleCommand(client, st, message)
+	return i.unfinishedCommandHandler(client, st, message)
 }
