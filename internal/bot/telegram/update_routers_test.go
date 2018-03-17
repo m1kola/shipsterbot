@@ -307,7 +307,7 @@ func TestRouteCallbackQuery(t *testing.T) {
 	}
 
 	// Common function mocks
-	handlerMock := callbackQueryHandlerFunc(func(
+	handlerMock := func(
 		_ botClientInterface,
 		_ storage.DataStorageInterface,
 		callbackQuery *tgbotapi.CallbackQuery,
@@ -323,7 +323,7 @@ func TestRouteCallbackQuery(t *testing.T) {
 		}
 
 		return errMock
-	})
+	}
 	getBotCommandsMappingOld := getBotCommandsMapping
 	defer func() { getBotCommandsMapping = getBotCommandsMappingOld }()
 	getBotCommandsMapping = func() map[string]botCommand {
@@ -485,7 +485,7 @@ func TestRouteMessageEntities(t *testing.T) {
 	getBotCommandsMapping = func() map[string]botCommand {
 		return map[string]botCommand{
 			commandAdd: botCommand{
-				commandHandler: commandHandlerFunc(handlerMock),
+				commandHandler: handlerMock,
 			},
 		}
 	}
@@ -559,7 +559,7 @@ func TestRouteMessageText(t *testing.T) {
 	getBotCommandsMapping = func() map[string]botCommand {
 		return map[string]botCommand{
 			commandStart: botCommand{
-				unfinishedCommandHandler: commandHandlerFunc(handlerMock),
+				unfinishedCommandHandler: handlerMock,
 			},
 		}
 	}
