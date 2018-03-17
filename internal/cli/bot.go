@@ -26,33 +26,43 @@ var startTelegramBotCmd = &cobra.Command{
 	Short: "Start a telegram bot",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Initialise DB connection pool
-		db, err := sql.Open("postgres", env.GetDBConnectionString())
+		dbConnectionStr, err := env.GetDBConnectionString()
+		if err != nil {
+			log.Fatal(err)
+		}
+		db, err := sql.Open("postgres", dbConnectionStr)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// Initialise a bot instance
-		apiClient, err := telegram.NewAPIClient(env.GetTelegramAPIToken())
+		// Get bot API token
+		apiToken, err := env.GetTelegramAPIToken()
 		if err != nil {
 			log.Fatal(err)
 		}
-		apiClient.SetDebug(env.IsDebug())
-		log.Printf("Authorised on account %s", apiClient.BotUserName())
-
-		port, err := env.GetTelegramWebhookPort()
-		if err != nil {
-			log.Fatal(err)
-		}
-		TLSCertPath := env.GetTelegramTLSCertPath()
-		TLSKeyPath := env.GetTelegramTLSKeyPath()
 
 		// Create a app bot instance
+		newBotAppOptions := []func(*telegram.BotApp) error{}
+
+		TLSCertPath, TLSCertPathErr := env.GetTelegramTLSCertPath()
+		TLSKeyPath, TLSKeyPathErr := env.GetTelegramTLSKeyPath()
+		if TLSCertPathErr == nil && TLSKeyPathErr == nil {
+			newBotAppOptions = append(
+				newBotAppOptions,
+				telegram.WebhookTLS(TLSCertPath, TLSKeyPath),
+			)
+		}
+
 		storage := storage.NewSQLStorage(db)
-		botApp := telegram.NewBotApp(
-			apiClient, storage,
-			port, TLSCertPath, TLSKeyPath)
-		err = telegram.StartBotApp(botApp)
+		botApp, err := telegram.NewBotApp(
+			storage,
+			apiToken,
+			newBotAppOptions...,
+		)
 		if err != nil {
+			log.Fatal(err)
+		}
+		if err := telegram.StartBotApp(botApp); err != nil {
 			log.Fatal(err)
 		}
 	},

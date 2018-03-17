@@ -137,8 +137,13 @@ func newMigrate() (*migrate.Migrate, error) {
 
 	// Initialize migrate
 	// Each command must decide  how it wants to handle the migraterErr
+	dbConnectionStr, err := env.GetDBConnectionString()
+	if err != nil {
+		log.Fatal(err)
+	}
 	migrater, migraterErr := migrate.NewWithSourceInstance(
-		"go-bindata", bindataMigrateSource, env.GetDBConnectionString())
+		"go-bindata", bindataMigrateSource, dbConnectionStr,
+	)
 
 	if migraterErr == nil {
 		// handle Ctrl+c

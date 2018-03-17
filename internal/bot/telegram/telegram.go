@@ -4,8 +4,12 @@ import (
 	"log"
 	"net/http"
 
+	tgbotapi "gopkg.in/telegram-bot-api.v4"
+
 	"github.com/m1kola/shipsterbot/internal/pkg/storage"
 )
+
+const defaultServerPort = "8443"
 
 type webHookServerConfig struct {
 	port        string
@@ -21,23 +25,60 @@ type BotApp struct {
 	serverConfig *webHookServerConfig
 }
 
+// WebhookTLS allows webhook webserver to operate in secure transport mode
+func WebhookTLS(TLSCertPath, TLSKeyPath string) func(*BotApp) error {
+	return func(app *BotApp) error {
+		app.serverConfig.TLSCertPath = TLSCertPath
+		app.serverConfig.TLSKeyPath = TLSKeyPath
+
+		return nil
+	}
+}
+
+// WebhookPort sets a custom webhook port
+func WebhookPort(port string) func(*BotApp) error {
+	return func(app *BotApp) error {
+		err := ValidateWebhookPort(port)
+		if err != nil {
+			return err
+		}
+
+		app.serverConfig.port = port
+		return nil
+	}
+}
+
+var tgbotapiNewBotAPI = tgbotapi.NewBotAPI
+
 // NewBotApp creates a new instance of a bot struct
 func NewBotApp(
-	tgbot *APIClient,
 	storage storage.DataStorageInterface,
-	port, TLSCertPath, TLSKeyPath string,
-) *BotApp {
-	serverConfig := &webHookServerConfig{
-		port:        port,
-		TLSCertPath: TLSCertPath,
-		TLSKeyPath:  TLSKeyPath,
+	apiToken string,
+	options ...(func(*BotApp) error),
+) (*BotApp, error) {
+	client, err := tgbotapiNewBotAPI(apiToken)
+	if err != nil {
+		return nil, err
 	}
 
-	return &BotApp{
-		bot:          tgbot.botClient,
+	serverConfig := &webHookServerConfig{
+		port: defaultServerPort,
+	}
+
+	botApp := &BotApp{
+		bot:          &apiClientWrapper{client},
 		storage:      storage,
 		serverConfig: serverConfig,
 	}
+
+	for _, option := range options {
+		err := option(botApp)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return botApp, nil
 }
 
 // StartBotApp starts the  bot
