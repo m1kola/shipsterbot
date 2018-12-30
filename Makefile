@@ -42,12 +42,6 @@ $(GODEP): | $(BIN)
 	chmod +x $@
 
 
-# Install go-bindata
-GOBINDATA := $(BIN)/go-bindata
-$(GOBINDATA): | $(BIN)
-	go get -u github.com/jteeuwen/go-bindata/...
-
-
 # Install mockgen
 # NOTE that we don't call mockgen it directly: we use it via go generate
 GOMOCKGEN := $(BIN)/mockgen
@@ -60,14 +54,6 @@ $(GOMOCKGEN): | $(BIN)
 vendor: Gopkg.lock Gopkg.toml | $(GODEP)
 	cd $(BASE) && \
 	$(GODEP) ensure -vendor-only
-
-
-# Generate bindata for migrations
-MIGRATIONS_BINDATA_PATH := $(BASE)/migrations/bindata.go
-.PHONY: migrations
-migrations: | $(GOBINDATA)
-	cd $(BASE) && \
-	cd ./internal/migrations && $(GOBINDATA) -pkg migrations .
 
 
 # Run go generate (generates mocks, etc)
@@ -94,6 +80,5 @@ test: vendor migrations
 # Cleanup working directory
 .PHONY: clean
 clean:
-	rm -rf $(MIGRATIONS_BINDATA_PATH)
 	rm -rf $(BASE)/$(OUTPUT_BIN)
 	rm -rf $(GOPATH)

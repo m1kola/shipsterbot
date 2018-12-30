@@ -2,7 +2,6 @@
 /.gopath
 /shipsterbot
 /debug
-/internal/migrations/bindata.go
 
 # Binaries for programs and plugins
 *.exe

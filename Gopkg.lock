@@ -10,20 +10,6 @@
   version = "v4.6.4"
 
 [[projects]]
-  digest = "1:a53effe959542818285d7adee00ee2807babee2ea8b82956fe4a4cab60c34bd5"
-  name = "github.com/golang-migrate/migrate"
-  packages = [
-    ".",
-    "database",
-    "database/postgres",
-    "source",
-    "source/go-bindata",
-  ]
-  pruneopts = ""
-  revision = "22f249514de9aa3f8a720a7cabbdd45d294f83a1"
-  version = "v3.2.0"
-
-[[projects]]
   digest = "1:a1bad350477afbc84e8cbe5c78be4579478c55335377239631ff0adb985fbabc"
   name = "github.com/golang/mock"
   packages = ["gomock"]
@@ -79,9 +65,6 @@
   analyzer-version = 1
   input-imports = [
     "github.com/go-telegram-bot-api/telegram-bot-api",
-    "github.com/golang-migrate/migrate",
-    "github.com/golang-migrate/migrate/database/postgres",
-    "github.com/golang-migrate/migrate/source/go-bindata",
     "github.com/golang/mock/gomock",
     "github.com/lib/pq",
     "github.com/spf13/cobra",
