@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.9
+  - 1.11
 
 # Use container-based infrastructure
 dist: trusty
@@ -9,6 +9,8 @@ sudo: required
 services:
   - docker
 
+env:
+  DOCKER_IMAGE: m1kola/shipsterbot
 
 # Install project dependencies
 install:
@@ -19,24 +21,11 @@ script:
   - make test
 
   # Build a docker image
-  - docker build -t m1kola/shipsterbot .
-  - docker images m1kola/shipsterbot
+  - docker build -t $DOCKER_IMAGE:latest -t $DOCKER_IMAGE:$TRAVIS_COMMIT .
+  - docker images $DOCKER_IMAGE
 
-  # Push an image into the public docker registry
-  # Should only work on the master branch.
-  #
-  # Note that $TRAVIS_BRANCH for builds triggered by a pull request will have
-  # the name of the branch targeted by the pull request,
-  # so we also need to check $TRAVIS_PULL_REQUEST to prevent pushing
-  # on pull requests targeted to the master branch.
-  # See https://docs.travis-ci.com/user/environment-variables/#Default-Environment-Variables
-  #
-  # Another important note is thar we should run this as part of the "script"
-  # stage, because later stages (such as "after_script" and "after_success")
-  # do not affect the build result and we want to receive notifications,
-  # in case of failed attempts to push to the docker registry.
-  - >
-    if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-      docker login -u "$DOCKER_HUB_USERNAME" -p "$DOCKER_HUB_PASSWORD";
-      docker push m1kola/shipsterbot;
-    fi;
+deploy:
+  provider: script
+  on:
+    branch: master
+  script: docker login -u "$DOCKER_HUB_USERNAME" -p "$DOCKER_HUB_PASSWORD" && docker push $DOCKER_IMAGE
