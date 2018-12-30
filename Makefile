@@ -34,7 +34,7 @@ $(BIN): | $(BASE)
 
 
 # Download a specific version of dep
-GODEP_VERSION   := 0.3.2
+GODEP_VERSION   := 0.5.0
 GODEP_URL       := https://github.com/golang/dep/releases/download/v$(GODEP_VERSION)/dep-$(GOOS)-$(GOARCH)
 GODEP           := $(BIN)/dep
 $(GODEP): | $(BIN)
