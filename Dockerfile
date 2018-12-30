@@ -28,6 +28,6 @@ RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
 COPY --from=build /builddir/shipsterbot .
 
 # Define a command to run in a container
-CMD ./shipsterbot migrate up && ./shipsterbot startbot telegram
+CMD ./shipsterbot startbot telegram
 
 EXPOSE 8443

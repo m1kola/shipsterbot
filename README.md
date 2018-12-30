@@ -118,12 +118,7 @@ So to run the application you need to do the following:
     export TELEGRAM_TLS_KEY_PATH=/path/to/your/telegram_private.key
     export DEBUG=true
     ```
-3. Run migrations database migrations:
-
-    ```
-    ./shipsterbot migrate up
-    ```
-
+3. Run database migrations using [`migrate`](https://github.com/golang-migrate/migrate):
 4. Run the application:
 
     ```
