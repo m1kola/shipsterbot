@@ -1,5 +1,5 @@
 # Build step
-FROM golang:1.9 as build
+FROM golang:1.11 as build
 
 WORKDIR /builddir
 
@@ -19,7 +19,7 @@ RUN CGO_ENABLED=0 make build
 
 
 # Image build
-FROM alpine:3.7
+FROM alpine:3.8
 WORKDIR /app/bin/
 
 RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*

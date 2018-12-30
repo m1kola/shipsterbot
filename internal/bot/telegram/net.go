@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 // ValidateWebhookPort returns an error if an invalid port has been provided

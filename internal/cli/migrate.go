@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/mattes/migrate"
+	"github.com/golang-migrate/migrate"
 	// Init migrate's postgres driver
-	_ "github.com/mattes/migrate/database/postgres"
-	"github.com/mattes/migrate/source/go-bindata"
+	_ "github.com/golang-migrate/migrate/database/postgres"
+	"github.com/golang-migrate/migrate/source/go-bindata"
 
 	"github.com/spf13/cobra"
 

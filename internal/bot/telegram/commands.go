@@ -21,7 +21,7 @@
 package telegram
 
 import (
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
 	"github.com/m1kola/shipsterbot/internal/pkg/storage"
 )
@@ -49,32 +49,32 @@ var getBotCommandsMapping = func() map[string]botCommand {
 	return map[string]botCommand{
 		// The `/start` command is implicit: Telegram sends on user's behalf
 		// when they start the bot.
-		commandStart: botCommand{
+		commandStart: {
 			commandHandler: handleStart,
 		},
-		commandHelp: botCommand{
+		commandHelp: {
 			description:       "Show the list of available commands and short descriptions",
 			showInHelpMessage: true,
 			commandHandler:    handleStart,
 		},
-		commandAdd: botCommand{
+		commandAdd: {
 			description:              "Add an item into your shopping list",
 			showInHelpMessage:        true,
 			commandHandler:           handleAdd,
 			unfinishedCommandHandler: handleAddSession,
 		},
-		commandList: botCommand{
+		commandList: {
 			description:       "Display items the shopping list",
 			showInHelpMessage: true,
 			commandHandler:    handleList,
 		},
-		commandDel: botCommand{
+		commandDel: {
 			description:          "Delete an item from your shopping list",
 			showInHelpMessage:    true,
 			commandHandler:       handleDel,
 			callbackQueryHandler: handleDelCallbackQuery,
 		},
-		commandClear: botCommand{
+		commandClear: {
 			description:          "Delete all items from the shopping list",
 			showInHelpMessage:    true,
 			commandHandler:       handleClear,

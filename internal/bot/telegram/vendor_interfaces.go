@@ -7,7 +7,7 @@ package telegram
 //go:generate mockgen -source=$GOFILE -destination=../../mocks/bot/mock_$GOPACKAGE/$GOFILE -package=mock_$GOPACKAGE
 
 import (
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 type webhookListener interface {

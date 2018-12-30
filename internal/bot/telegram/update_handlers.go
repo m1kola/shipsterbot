@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
 	"github.com/m1kola/shipsterbot/internal/pkg/models"
 	"github.com/m1kola/shipsterbot/internal/pkg/storage"

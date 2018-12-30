@@ -2,56 +2,89 @@
 
 
 [[projects]]
+  digest = "1:b0f81d29fcc8df568a060df5ef86e6aed544003e2c65007541cca17a83605768"
+  name = "github.com/go-telegram-bot-api/telegram-bot-api"
+  packages = ["."]
+  pruneopts = ""
+  revision = "9860bdfd3a171ceafb6e1eafa163482a6ef92643"
+  version = "v4.6.4"
+
+[[projects]]
+  digest = "1:a53effe959542818285d7adee00ee2807babee2ea8b82956fe4a4cab60c34bd5"
+  name = "github.com/golang-migrate/migrate"
+  packages = [
+    ".",
+    "database",
+    "database/postgres",
+    "source",
+    "source/go-bindata",
+  ]
+  pruneopts = ""
+  revision = "22f249514de9aa3f8a720a7cabbdd45d294f83a1"
+  version = "v3.2.0"
+
+[[projects]]
+  digest = "1:a1bad350477afbc84e8cbe5c78be4579478c55335377239631ff0adb985fbabc"
   name = "github.com/golang/mock"
   packages = ["gomock"]
+  pruneopts = ""
   revision = "13f360950a79f5864a972c786a10a50e44b69541"
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
+  pruneopts = ""
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
   version = "v1.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:c427c0ff484d0eda383188ee5559a1b28783a579e2a64b8dc4e3a15d38ee3cc2"
   name = "github.com/lib/pq"
-  packages = [".","oid"]
+  packages = [
+    ".",
+    "oid",
+  ]
+  pruneopts = ""
   revision = "8c6ee72f3e6bcb1542298dd5f76cb74af9742cec"
 
 [[projects]]
-  name = "github.com/mattes/migrate"
-  packages = [".","database","database/postgres","source","source/go-bindata"]
-  revision = "035c07716cd373d88456ec4d701402df52584cb4"
-  version = "v3.0.1"
-
-[[projects]]
+  digest = "1:2208a80fc3259291e43b30f42f844d18f4218036dff510f42c653ec9890d460a"
   name = "github.com/spf13/cobra"
   packages = ["."]
+  pruneopts = ""
   revision = "7b2c5ac9fc04fc5efafb60700713d4fa609b777b"
   version = "v0.0.1"
 
 [[projects]]
+  digest = "1:261bc565833ef4f02121450d74eb88d5ae4bd74bfe5d0e862cddb8550ec35000"
   name = "github.com/spf13/pflag"
   packages = ["."]
+  pruneopts = ""
   revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:3bfdafac43ceb125f775eb79b8ee8f1e976e227464434ffad40f956ac029e760"
   name = "github.com/technoweenie/multipartstreamer"
   packages = ["."]
+  pruneopts = ""
   revision = "a90a01d73ae432e2611d178c18367fbaa13e0154"
   version = "v1.0.1"
-
-[[projects]]
-  name = "gopkg.in/telegram-bot-api.v4"
-  packages = ["."]
-  revision = "2022d04b94f50056a09962b1ac81cdd821d20a55"
-  version = "v4.6.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "141eaad0256537ecd18d79d5ca619aac37aef69e42b47adc872242306966aecb"
+  input-imports = [
+    "github.com/go-telegram-bot-api/telegram-bot-api",
+    "github.com/golang-migrate/migrate",
+    "github.com/golang-migrate/migrate/database/postgres",
+    "github.com/golang-migrate/migrate/source/go-bindata",
+    "github.com/golang/mock/gomock",
+    "github.com/lib/pq",
+    "github.com/spf13/cobra",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

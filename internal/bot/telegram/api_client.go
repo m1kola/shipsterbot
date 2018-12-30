@@ -1,7 +1,7 @@
 package telegram
 
 import (
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 // apiClientWrapper is required to statisfy internal interfaces

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/golang/mock/gomock"
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
 
 	"github.com/m1kola/shipsterbot/internal/pkg/mocks/bot/mock_telegram"
 	"github.com/m1kola/shipsterbot/internal/pkg/mocks/mock_storage"
@@ -328,7 +328,7 @@ func TestRouteCallbackQuery(t *testing.T) {
 	defer func() { getBotCommandsMapping = getBotCommandsMappingOld }()
 	getBotCommandsMapping = func() map[string]botCommand {
 		return map[string]botCommand{
-			commandClear: botCommand{
+			commandClear: {
 				callbackQueryHandler: handlerMock,
 			},
 		}
@@ -484,7 +484,7 @@ func TestRouteMessageEntities(t *testing.T) {
 	defer func() { getBotCommandsMapping = getBotCommandsMappingOld }()
 	getBotCommandsMapping = func() map[string]botCommand {
 		return map[string]botCommand{
-			commandAdd: botCommand{
+			commandAdd: {
 				commandHandler: handlerMock,
 			},
 		}
@@ -558,7 +558,7 @@ func TestRouteMessageText(t *testing.T) {
 	defer func() { getBotCommandsMapping = getBotCommandsMappingOld }()
 	getBotCommandsMapping = func() map[string]botCommand {
 		return map[string]botCommand{
-			commandStart: botCommand{
+			commandStart: {
 				unfinishedCommandHandler: handlerMock,
 			},
 		}

@@ -5,8 +5,8 @@
 package mock_telegram
 
 import (
+	telegram_bot_api_v4 "github.com/go-telegram-bot-api/telegram-bot-api"
 	gomock "github.com/golang/mock/gomock"
-	telegram_bot_api_v4 "gopkg.in/telegram-bot-api.v4"
 	reflect "reflect"
 )
 

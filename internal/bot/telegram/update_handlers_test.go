@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 
 	"github.com/golang/mock/gomock"
 	"github.com/m1kola/shipsterbot/internal/pkg/mocks/bot/mock_telegram"
@@ -282,8 +282,8 @@ func TestHandleList(t *testing.T) {
 		t.Run("Shopping list with items", func(t *testing.T) {
 			// Data mocks
 			storageDataMock := []*models.ShoppingItem{
-				&models.ShoppingItem{Name: "Milk"},
-				&models.ShoppingItem{Name: "Молоко"},
+				{Name: "Milk"},
+				{Name: "Молоко"},
 			}
 
 			stMock.EXPECT().GetShoppingItems(gomock.Any()).Return(storageDataMock, nil)
@@ -346,7 +346,7 @@ func TestHandleAddSession(t *testing.T) {
 			mock_telegram.MessageCommandMockSetup(commandAdd, expectedItemName),
 
 			// Plain text message
-			&tgbotapi.Message{Text: expectedItemName},
+			{Text: expectedItemName},
 		}
 
 		for _, messageMock := range testCases {
@@ -452,8 +452,8 @@ func TestHandleDel(t *testing.T) {
 		t.Run("Shopping list with items", func(t *testing.T) {
 			// Data mocks
 			storageDataMock := []*models.ShoppingItem{
-				&models.ShoppingItem{ID: 1, Name: "Milk"},
-				&models.ShoppingItem{ID: 2, Name: "Молоко"},
+				{ID: 1, Name: "Milk"},
+				{ID: 2, Name: "Молоко"},
 			}
 
 			stMock.EXPECT().GetShoppingItems(gomock.Any()).Return(storageDataMock, nil)
@@ -732,8 +732,8 @@ func TestHandleClear(t *testing.T) {
 		t.Run("Shopping list with items", func(t *testing.T) {
 			// Data mocks
 			storageDataMock := []*models.ShoppingItem{
-				&models.ShoppingItem{ID: 1, Name: "Milk"},
-				&models.ShoppingItem{ID: 2, Name: "Молоко"},
+				{ID: 1, Name: "Milk"},
+				{ID: 2, Name: "Молоко"},
 			}
 
 			stMock.EXPECT().GetShoppingItems(gomock.Any()).Return(storageDataMock, nil)

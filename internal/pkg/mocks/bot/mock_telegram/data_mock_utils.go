@@ -3,7 +3,7 @@ package mock_telegram
 import (
 	"fmt"
 
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 // MessageCommandMockSetup creates fake message with a command
@@ -17,7 +17,7 @@ func MessageCommandMockSetup(command, commandArgs string) *tgbotapi.Message {
 
 	message := &tgbotapi.Message{
 		Entities: &[]tgbotapi.MessageEntity{
-			tgbotapi.MessageEntity{
+			{
 				Type:   "bot_command",
 				Offset: 0,
 				Length: len(commandWithSlash),
