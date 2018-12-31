@@ -29,6 +29,8 @@ RUN wget -q https://github.com/golang-migrate/migrate/releases/download/v4.1.0/m
     && echo  "56546df1fcd708e981b965676c4930a23aa05543e662c681d700599315e5553d  migrate.linux-amd64.tar.gz" | sha256sum -c - \
     && tar -xzf migrate.linux-amd64.tar.gz && mv migrate.linux-amd64 /usr/local/bin/migrate && rm migrate.linux-amd64.tar.gz
 
+COPY ./migrations/ /app/migrations/
+
 # Copy a binary from the build step
 COPY --from=build /builddir/shipsterbot .
 
