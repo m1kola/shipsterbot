@@ -4,7 +4,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-// apiClientWrapper is required to statisfy internal interfaces
+// apiClientWrapper is required to satisfy internal interfaces
 type apiClientWrapper struct {
 	*tgbotapi.BotAPI
 }

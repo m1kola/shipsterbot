@@ -318,7 +318,7 @@ func TestRouteCallbackQuery(t *testing.T) {
 		}
 
 		if expectedPayload != payload {
-			t.Errorf("Expected paylod %#v, got %#v",
+			t.Errorf("Expected payload %#v, got %#v",
 				expectedPayload, payload)
 		}
 
@@ -397,13 +397,13 @@ func TestRouteMessage(t *testing.T) {
 	clientMock := mock_telegram.NewMockbotClientInterface(mockCtrl)
 	stMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
 
-	// Comon data mocks
+	// Common data mocks
 	messageMock := &tgbotapi.Message{}
 
 	t.Run("Proxy errors from routeMessageEntities", func(t *testing.T) {
 
 		t.Run("updateRoutingError", func(t *testing.T) {
-			// Sould expect an error from routeMessageText
+			// Should expect an error from routeMessageText
 
 			t.Run("errCommandIsNotSupported", func(t *testing.T) {
 				// Function mocks
@@ -596,7 +596,7 @@ func TestRouteMessageText(t *testing.T) {
 			}
 		})
 
-		t.Run("Unfinished command wasn not found", func(t *testing.T) {
+		t.Run("Unfinished command was not found", func(t *testing.T) {
 			// Interface mocks
 			stMock.EXPECT().GetUnfinishedCommand(
 				messageMock.Chat.ID,

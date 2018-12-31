@@ -1,4 +1,4 @@
-// This module defines command representaton and handler interfaces.
+// This module defines command representation and handler interfaces.
 //
 // There are three types of handlers:
 //  * Command handlers - To handle bot commands like `/add`, `/del`, `/help`.
@@ -15,7 +15,7 @@
 //  * Callback query handlers - To handle commands that use an inline keyboard.
 //
 //    For example, the `/del` command handler sends a message with an inline
-//    keybaord that asks an users to confirm what item they want to delete
+//    keyboard that asks an users to confirm what item they want to delete
 //    from their shopping list.
 
 package telegram

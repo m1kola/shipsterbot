@@ -296,7 +296,7 @@ func TestHandleList(t *testing.T) {
 					)
 				}
 
-				// Chec if all items are present in the message
+				// Check if all items are present in the message
 				for _, dataItem := range storageDataMock {
 					if !strings.Contains(msgCfg.Text, dataItem.Name) {
 						t.Errorf("Expected message to contain %#v", dataItem.Name)
@@ -468,7 +468,7 @@ func TestHandleDel(t *testing.T) {
 
 				inlineKeyboardMarkup, ok := msgCfg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup)
 				if !ok {
-					t.Fatal("Expected message to contain inline keybaord")
+					t.Fatal("Expected message to contain inline keyboard")
 				}
 
 				rowsNumber := len(inlineKeyboardMarkup.InlineKeyboard)
@@ -610,9 +610,10 @@ func TestHandleDelCallbackQuery(t *testing.T) {
 			).Do(generateCallbackQueryIDChecker(t))
 			stMock.EXPECT().GetShoppingItem(expectedItemID).Return(nil, nil)
 
-			sendHideKeybaordCall := clientMock.EXPECT().Send(gomock.Any())
-			sendHideKeybaordCall.Do(
-				generateSendHideKeybaordCallChecker(t, callbackQueryMock),
+			//
+			sendHideKeyboardCall := clientMock.EXPECT().Send(gomock.Any())
+			sendHideKeyboardCall.Do(
+				generateSendHideKeyboardCallChecker(t, callbackQueryMock),
 			)
 			sendTextCall := clientMock.EXPECT().Send(gomock.Any())
 			sendTextCall.Do(func(msgCfg tgbotapi.MessageConfig) {
@@ -647,9 +648,9 @@ func TestHandleDelCallbackQuery(t *testing.T) {
 			stMock.EXPECT().GetShoppingItem(expectedItemID).Return(item, nil)
 			stMock.EXPECT().DeleteShoppingItem(expectedItemID).Return(nil)
 
-			sendHideKeybaordCall := clientMock.EXPECT().Send(gomock.Any())
-			sendHideKeybaordCall.Do(
-				generateSendHideKeybaordCallChecker(t, callbackQueryMock),
+			sendHideKeyboardCall := clientMock.EXPECT().Send(gomock.Any())
+			sendHideKeyboardCall.Do(
+				generateSendHideKeyboardCallChecker(t, callbackQueryMock),
 			)
 			sendTextCall := clientMock.EXPECT().Send(gomock.Any())
 			sendTextCall.Do(func(msgCfg tgbotapi.MessageConfig) {
@@ -748,7 +749,7 @@ func TestHandleClear(t *testing.T) {
 
 				inlineKeyboardMarkup, ok := msgCfg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup)
 				if !ok {
-					t.Fatal("Expected message to contain inline keybaord")
+					t.Fatal("Expected message to contain inline keyboard")
 				}
 
 				expectedRowsNumber := 1
@@ -761,7 +762,7 @@ func TestHandleClear(t *testing.T) {
 				}
 
 				expectedCallbackData := []string{
-					fmt.Sprintf("%s:%s", commandClear, clearCallbackDataConfim),
+					fmt.Sprintf("%s:%s", commandClear, clearCallbackDataConfirm),
 					fmt.Sprintf("%s:%s", commandClear, clearCallbackDataCancel),
 				}
 
@@ -848,7 +849,7 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 			).Return(errMock)
 
 			err := handleClearCallbackQuery(
-				clientMock, stMock, callbackQueryMock, clearCallbackDataConfim,
+				clientMock, stMock, callbackQueryMock, clearCallbackDataConfirm,
 			)
 			if !strings.Contains(err.Error(), errMock.Error()) {
 				t.Errorf(
@@ -869,9 +870,9 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 				callbackQueryMock.Message.Chat.ID,
 			).Return(nil)
 
-			sendHideKeybaordCall := clientMock.EXPECT().Send(gomock.Any())
-			sendHideKeybaordCall.Do(
-				generateSendHideKeybaordCallChecker(t, callbackQueryMock),
+			sendHideKeyboardCall := clientMock.EXPECT().Send(gomock.Any())
+			sendHideKeyboardCall.Do(
+				generateSendHideKeyboardCallChecker(t, callbackQueryMock),
 			)
 			sendTextCall := clientMock.EXPECT().Send(gomock.Any())
 			sendTextCall.Do(func(msgCfg tgbotapi.MessageConfig) {
@@ -893,7 +894,7 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 			})
 
 			err := handleClearCallbackQuery(
-				clientMock, stMock, callbackQueryMock, clearCallbackDataConfim,
+				clientMock, stMock, callbackQueryMock, clearCallbackDataConfirm,
 			)
 			if err != nil {
 				t.Errorf("Unexpected error: %#v", err)
@@ -906,9 +907,9 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 				gomock.Any(),
 			).Do(generateCallbackQueryIDChecker(t))
 
-			sendHideKeybaordCall := clientMock.EXPECT().Send(gomock.Any())
-			sendHideKeybaordCall.Do(
-				generateSendHideKeybaordCallChecker(t, callbackQueryMock),
+			sendHideKeyboardCall := clientMock.EXPECT().Send(gomock.Any())
+			sendHideKeyboardCall.Do(
+				generateSendHideKeyboardCallChecker(t, callbackQueryMock),
 			)
 			sendTextCall := clientMock.EXPECT().Send(gomock.Any())
 			sendTextCall.Do(func(msgCfg tgbotapi.MessageConfig) {
@@ -942,7 +943,7 @@ func TestHandleClearCallbackQuery(t *testing.T) {
 
 // --- Utils
 
-func generateSendHideKeybaordCallChecker(
+func generateSendHideKeyboardCallChecker(
 	t *testing.T,
 	callbackQueryMock *tgbotapi.CallbackQuery,
 ) interface{} {
@@ -960,7 +961,7 @@ func generateSendHideKeybaordCallChecker(
 		if hasOneRow && firstRowIsEmpty {
 			t.Error(
 				"Expected the message update to contain empty inline",
-				"keyboard layout to hide the keybaord",
+				"keyboard layout to hide the keyboard",
 			)
 		}
 	}

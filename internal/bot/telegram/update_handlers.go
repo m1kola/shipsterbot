@@ -261,14 +261,14 @@ func handleDelCallbackQuery(
 
 	hideInlineKeyboard(client, chatID, messageID)
 
-	// Send deletion confimration text
+	// Send deletion confirmation text
 	msg := tgbotapi.NewMessage(chatID, text)
 	client.Send(msg)
 
 	return nil
 }
 
-const clearCallbackDataConfim = "1"
+const clearCallbackDataConfirm = "1"
 const clearCallbackDataCancel = "0"
 
 func handleClear(
@@ -298,7 +298,7 @@ func handleClear(
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	if !isEmpty {
-		yesCallbackData := joinCallbackQueryData(commandClear, clearCallbackDataConfim)
+		yesCallbackData := joinCallbackQueryData(commandClear, clearCallbackDataConfirm)
 		cancelCallbackData := joinCallbackQueryData(commandClear, clearCallbackDataCancel)
 
 		msg.BaseChat.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
@@ -323,7 +323,7 @@ func handleClearCallbackQuery(
 
 	chatID := callbackQuery.Message.Chat.ID
 	messageID := callbackQuery.Message.MessageID
-	dataIsValid := data == clearCallbackDataConfim || data == clearCallbackDataCancel
+	dataIsValid := data == clearCallbackDataConfirm || data == clearCallbackDataCancel
 	if !dataIsValid {
 		return fmt.Errorf(
 			"Unable to parse confirmation from the CallbackQuery data %#v",
@@ -332,7 +332,7 @@ func handleClearCallbackQuery(
 	}
 
 	var text string
-	confirmed := data == clearCallbackDataConfim
+	confirmed := data == clearCallbackDataConfirm
 	if confirmed {
 		text = "Ok, I've deleted all items from you shopping list.\n\nNow you can start from scratch, if you wish."
 
@@ -348,18 +348,18 @@ func handleClearCallbackQuery(
 
 	hideInlineKeyboard(client, chatID, messageID)
 
-	// Send deletion confimration text
+	// Send deletion confirmation text
 	msg := tgbotapi.NewMessage(chatID, text)
 	client.Send(msg)
 
 	return nil
 }
 
-// hideInlineKeyboard makes the telegram client to hide inline keybaord
+// hideInlineKeyboard makes the telegram client to hide inline keyboard
 // by editing a message with `messageID` in in a chat with `chatID`
 func hideInlineKeyboard(client botClientInterface, chatID int64, messageID int) {
 	// It's important to send replyMarkup exactly like this,
-	// because otherwise telegram clients will not hide the keybaord
+	// because otherwise telegram clients will not hide the keyboard
 	replyMarkup := tgbotapi.NewInlineKeyboardMarkup(
 		[]tgbotapi.InlineKeyboardButton{},
 	)

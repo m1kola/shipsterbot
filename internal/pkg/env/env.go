@@ -1,4 +1,4 @@
-// Package env encapsulates all avaialbe env vars that the program can accept
+// Package env encapsulates all available env vars that the program can accept
 package env
 
 import "os"
@@ -13,7 +13,7 @@ const (
 const (
 	telegramAPITokenVarName    = "TELEGRAM_API_TOKEN"
 	telegramTLSCertPathVarName = "TELEGRAM_TLS_CERT_PATH"
-	telegramTLSKeyPathhVarName = "TELEGRAM_TLS_KEY_PATH"
+	telegramTLSKeyPathVarName  = "TELEGRAM_TLS_KEY_PATH"
 	telegramWebhookPortVarName = "TELEGRAM_WEBHOOK_PORT"
 )
 
@@ -39,7 +39,7 @@ func GetTelegramTLSCertPath() (string, error) {
 
 // GetTelegramTLSKeyPath returns path to TLS key
 func GetTelegramTLSKeyPath() (string, error) {
-	return lookupEnv(telegramTLSKeyPathhVarName)
+	return lookupEnv(telegramTLSKeyPathVarName)
 }
 
 // GetTelegramWebhookPort returns port for Telegram webhook server

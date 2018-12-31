@@ -38,10 +38,10 @@ func TestValidateWebhookPort(t *testing.T) {
 	})
 }
 
-func TestNewServerWithIncommingRequstLogger(t *testing.T) {
+func TestNewServerWithincomingRequestLogger(t *testing.T) {
 	expectedAddr := ":8443"
 
-	server := newServerWithIncommingRequstLogger("8443", http.DefaultServeMux)
+	server := newServerWithincomingRequestLogger("8443", http.DefaultServeMux)
 	defer server.Close()
 
 	if server.Addr != expectedAddr {
@@ -89,8 +89,8 @@ func TestGetUpdatesChan(t *testing.T) {
 
 }
 
-func TestIncommingRequstLogger(t *testing.T) {
-	// Setup capturing buffer and restoer previous output
+func TestIncomingRequestLogger(t *testing.T) {
+	// Setup capturing buffer and restore previous output
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 	defer func() { log.SetOutput(os.Stderr) }()
@@ -100,9 +100,9 @@ func TestIncommingRequstLogger(t *testing.T) {
 		originalIsCalled = true
 	})
 
-	newHandler := incommingRequstLogger(mockHandler)
+	newHandler := incomingRequestLogger(mockHandler)
 
-	mockRequest := httptest.NewRequest("GET", "/traget-url", nil)
+	mockRequest := httptest.NewRequest("GET", "/target-url", nil)
 	w := httptest.NewRecorder()
 	newHandler.ServeHTTP(w, mockRequest)
 
@@ -110,7 +110,7 @@ func TestIncommingRequstLogger(t *testing.T) {
 		t.Error("Original handler expected to be called")
 	}
 
-	expectedLog := "192.0.2.1:1234 GET /traget-url"
+	expectedLog := "192.0.2.1:1234 GET /target-url"
 	bufString := buf.String()
 	if !strings.Contains(bufString, expectedLog) {
 		t.Errorf("%s expected to contain %s", bufString, expectedLog)

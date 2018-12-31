@@ -4,8 +4,8 @@ import "time"
 
 // UnfinishedCommand represents unfinished operations
 // for multi step user interactions.
-// For example, when a user wasnts to add an item into his shopping list,
-// he needs to send the "add" command and then answer bot's question
+// For example, when a user wants to add an item into his shopping list,
+// he needs to send the "add" command and then answer question asked by a bot
 // (send the name of item), so we need to remember what we have asked user for.
 type UnfinishedCommand struct {
 	Command   string

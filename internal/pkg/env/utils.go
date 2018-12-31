@@ -9,7 +9,7 @@ func lookupEnv(envVarName string) (string, error) {
 	val, ok := os.LookupEnv(envVarName)
 
 	if !ok {
-		return "", EnvVarNotFoundError{envVarName: envVarName}
+		return "", envVarNotFoundError{envVarName: envVarName}
 	}
 	return val, nil
 }

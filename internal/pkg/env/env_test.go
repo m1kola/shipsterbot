@@ -29,7 +29,7 @@ func TestSimpleEnvLookupFunctions(t *testing.T) {
 		{
 			funcToTest: GetTelegramTLSKeyPath,
 			testName:   "GetTelegramTLSKeyPath",
-			envVarKey:  telegramTLSKeyPathhVarName,
+			envVarKey:  telegramTLSKeyPathVarName,
 		},
 		{
 			funcToTest: GetTelegramWebhookPort,
@@ -53,10 +53,10 @@ func TestSimpleEnvLookupFunctions(t *testing.T) {
 					t.Error("Function must return an error, when the env var is unset.")
 				}
 
-				if _, ok := err.(EnvVarNotFoundError); !ok {
+				if _, ok := err.(envVarNotFoundError); !ok {
 					t.Errorf(
 						"Function must return an error of type %T, when the env var is unset. Got %T",
-						EnvVarNotFoundError{}, err,
+						envVarNotFoundError{}, err,
 					)
 				}
 

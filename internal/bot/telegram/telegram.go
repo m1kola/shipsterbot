@@ -86,7 +86,7 @@ func StartBotApp(bapp *BotApp) error {
 	updates := getUpdatesChan(bapp.bot)
 	go routeUpdates(bapp.bot, bapp.storage, updates)
 
-	server := newServerWithIncommingRequstLogger(
+	server := newServerWithincomingRequestLogger(
 		bapp.serverConfig.port, http.DefaultServeMux)
 
 	log.Printf("Start listening on %s", server.Addr)

@@ -17,7 +17,7 @@ func NewSQLStorage(db *sql.DB) *SQLStorage {
 	return &SQLStorage{db: db}
 }
 
-// AddUnfinishedCommand inserts an unfinished operaiont into the storage
+// AddUnfinishedCommand inserts an unfinished operation into the storage
 func (s *SQLStorage) AddUnfinishedCommand(command models.UnfinishedCommand) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -25,7 +25,7 @@ func (s *SQLStorage) AddUnfinishedCommand(command models.UnfinishedCommand) erro
 	}
 	defer tx.Rollback()
 
-	// Delete a previous unfinshed command (if any) in a transaction
+	// Delete a previous unfinished command (if any) in a transaction
 	_, err = tx.Exec(
 		`DELETE FROM
 			unfinished_commands
@@ -37,7 +37,7 @@ func (s *SQLStorage) AddUnfinishedCommand(command models.UnfinishedCommand) erro
 		return err
 	}
 
-	// Add a new unfinshed command
+	// Add a new unfinished command
 	_, err = tx.Exec(
 		`INSERT INTO
 			unfinished_commands(command, chat_id, created_by)
@@ -51,7 +51,7 @@ func (s *SQLStorage) AddUnfinishedCommand(command models.UnfinishedCommand) erro
 	return err
 }
 
-// GetUnfinishedCommand returns an unfinished operaiont from the storage
+// GetUnfinishedCommand returns an unfinished operation from the storage
 func (s *SQLStorage) GetUnfinishedCommand(chatID int64, userID int) (*models.UnfinishedCommand, error) {
 	command := models.UnfinishedCommand{}
 	row := s.db.QueryRow(
@@ -75,7 +75,7 @@ func (s *SQLStorage) GetUnfinishedCommand(chatID int64, userID int) (*models.Unf
 	return &command, err
 }
 
-// DeleteUnfinishedCommand deletes an unfinished operaiont from the storage
+// DeleteUnfinishedCommand deletes an unfinished operation from the storage
 func (s *SQLStorage) DeleteUnfinishedCommand(chatID int64, userID int) error {
 	_, err := s.db.Exec(
 		`DELETE FROM

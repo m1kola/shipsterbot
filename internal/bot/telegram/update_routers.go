@@ -132,7 +132,7 @@ var routeMessage = func(
 // routeMessageEntities routes message to a specific handler
 //
 // Currently we are only interested in commands, but it's possible to
-// receive mentions and orher entities.
+// receive mentions and other entities.
 // Everything other than command need to be ignored
 var routeMessageEntities = func(
 	client sender,
@@ -169,7 +169,7 @@ var routeMessageText = func(
 
 	if err != nil {
 		return fmt.Errorf(
-			"Unable to get an unfinished comamnd (ChatID=%d and UserId=%d): %v",
+			"Unable to get an unfinished command (ChatID=%d and UserId=%d): %v",
 			message.Chat.ID, message.From.ID, err)
 	}
 
@@ -191,7 +191,7 @@ var routeMessageText = func(
 
 	if err := st.DeleteUnfinishedCommand(message.Chat.ID, message.From.ID); err != nil {
 		return fmt.Errorf(
-			"Unable to delete an unfinished comamnd (ChatID=%d and UserId=%d): %v",
+			"Unable to delete an unfinished command (ChatID=%d and UserId=%d): %v",
 			message.Chat.ID, message.From.ID, err)
 	}
 
