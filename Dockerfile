@@ -34,5 +34,9 @@ COPY ./migrations/ /app/migrations/
 # Copy a binary from the build step
 COPY --from=build /builddir/shipsterbot .
 
+# Run the application as a non-root user
+RUN adduser -D shipster
+USER shipster
+
 # Define a command to run in a container
 CMD ./shipsterbot startbot telegram
