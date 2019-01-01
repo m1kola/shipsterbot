@@ -67,7 +67,7 @@ go_generate: vendor $(GOMOCKGEN)
 .PHONY: build
 build: vendor migrations
 	cd $(BASE) && \
-	go build -o $(OUTPUT_BIN)
+	go build -o $(OUTPUT_BIN) ./cmd/shipsterbot
 
 
 # Run tests for all pages
