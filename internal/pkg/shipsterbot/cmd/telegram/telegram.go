@@ -24,7 +24,7 @@ type webHookServerConfig struct {
 // BotApp is a struct for handeling interactions
 // with the Telegram API
 type BotApp struct {
-	bot          botClientInterface
+	bot          *tgbotapi.BotAPI
 	storage      storage.DataStorageInterface
 	serverConfig *webHookServerConfig
 }
@@ -52,25 +52,18 @@ func WebhookPort(port string) func(*BotApp) error {
 	}
 }
 
-var tgbotapiNewBotAPI = tgbotapi.NewBotAPI
-
 // NewBotApp creates a new instance of a bot struct
 func NewBotApp(
 	storage storage.DataStorageInterface,
-	apiToken string,
+	client *tgbotapi.BotAPI,
 	options ...(func(*BotApp) error),
 ) (*BotApp, error) {
-	client, err := tgbotapiNewBotAPI(apiToken)
-	if err != nil {
-		return nil, err
-	}
-
 	serverConfig := &webHookServerConfig{
 		port: defaultServerPort,
 	}
 
 	botApp := &BotApp{
-		bot:          &apiClientWrapper{client},
+		bot:          client,
 		storage:      storage,
 		serverConfig: serverConfig,
 	}
@@ -123,6 +116,10 @@ func NewStartTelegramBotCmd() *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
+			client, err := tgbotapi.NewBotAPI(apiToken)
+			if err != nil {
+				log.Fatal(err)
+			}
 
 			// Create a app bot instance
 			newBotAppOptions := []func(*BotApp) error{}
@@ -139,7 +136,7 @@ func NewStartTelegramBotCmd() *cobra.Command {
 			storage := storage.NewSQLStorage(db)
 			botApp, err := NewBotApp(
 				storage,
-				apiToken,
+				client,
 				newBotAppOptions...,
 			)
 			if err != nil {

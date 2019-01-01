@@ -17,21 +17,13 @@ func TestNewBotApp(t *testing.T) {
 
 	storageMock := mock_storage.NewMockDataStorageInterface(mockCtrl)
 
-	// Mocks 3rd party call (tgbotapi.NewBotAPI)
-	// which actually calls the telegram bot API for some weird reason.
-	tgbotapiNewBotAPIOld := tgbotapiNewBotAPI
-	defer func() { tgbotapiNewBotAPI = tgbotapiNewBotAPIOld }()
-	tgbotapiNewBotAPI = func(token string) (*tgbotapi.BotAPI, error) {
-		return &tgbotapi.BotAPI{}, nil
-	}
-
 	t.Run("TLS", func(t *testing.T) {
 		expectedCert := "/fake/cert.pem"
 		expectedKey := "/fake/key.key"
 
 		app, err := NewBotApp(
 			storageMock,
-			"fake_token",
+			&tgbotapi.BotAPI{},
 			WebhookTLS(expectedCert, expectedKey),
 		)
 		if err != nil {
@@ -55,7 +47,7 @@ func TestNewBotApp(t *testing.T) {
 
 			app, err := NewBotApp(
 				storageMock,
-				"fake_token",
+				&tgbotapi.BotAPI{},
 			)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -87,7 +79,7 @@ func TestNewBotApp(t *testing.T) {
 				t.Run(fmt.Sprintf("port %#v", test.value), func(t *testing.T) {
 					app, err := NewBotApp(
 						storageMock,
-						"fake_token",
+						&tgbotapi.BotAPI{},
 						WebhookPort(test.value),
 					)
 
@@ -118,7 +110,7 @@ func TestNewBotApp(t *testing.T) {
 
 		_, err := NewBotApp(
 			storageMock,
-			"fake_token",
+			&tgbotapi.BotAPI{},
 			func(*BotApp) error { return expectedErr },
 		)
 		if err != expectedErr {
@@ -137,7 +129,7 @@ func TestNewBotApp(t *testing.T) {
 
 		_, err := NewBotApp(
 			storageMock,
-			"fake_token",
+			&tgbotapi.BotAPI{},
 			func(*BotApp) error { return expectedErr },
 		)
 		if err != expectedErr {
@@ -151,14 +143,6 @@ func TestStartBotApp(t *testing.T) {
 		serverConfig: &webHookServerConfig{
 			port: "8443",
 		},
-	}
-
-	// Mock: getUpdatesChan
-	oldGetUpdatesChan := getUpdatesChan
-	defer func() { getUpdatesChan = oldGetUpdatesChan }()
-	getUpdatesChan = func(actualBotAppClient tokenListenForWebhook) <-chan tgbotapi.Update {
-		// No op mock
-		return nil
 	}
 
 	t.Run("Without error", func(t *testing.T) {

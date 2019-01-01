@@ -73,22 +73,6 @@ func TestListenAndServe(t *testing.T) {
 	})
 }
 
-func TestGetUpdatesChan(t *testing.T) {
-	expectedPattern := "/123/webhook"
-
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	mockObj := mock_telegram.NewMocktokenListenForWebhook(mockCtrl)
-	tokenCall := mockObj.EXPECT().Token()
-	tokenCall.Return("123")
-
-	mockObj.EXPECT().ListenForWebhook(expectedPattern).After(tokenCall)
-
-	getUpdatesChan(mockObj)
-
-}
-
 func TestIncomingRequestLogger(t *testing.T) {
 	// Setup capturing buffer and restore previous output
 	var buf bytes.Buffer

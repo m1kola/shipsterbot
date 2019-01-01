@@ -20,10 +20,6 @@ type listenerAndServer interface {
 	ListenAndServe() error
 }
 
-type tokener interface {
-	Token() string
-}
-
 type sender interface {
 	Send(c tgbotapi.Chattable) (tgbotapi.Message, error)
 }
@@ -32,14 +28,8 @@ type callbackQueryAnswerer interface {
 	AnswerCallbackQuery(config tgbotapi.CallbackConfig) (tgbotapi.APIResponse, error)
 }
 
-type tokenListenForWebhook interface {
-	webhookListener
-	tokener
-}
-
 type botClientInterface interface {
 	webhookListener
-	tokener
 	sender
 	callbackQueryAnswerer
 }
