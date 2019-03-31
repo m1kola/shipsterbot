@@ -5,3 +5,5 @@ release:
   image: web
   command:
     - migrate -source file:///app/migrations -database $DATABASE_URL up
+run:
+  web: TELEGRAM_WEBHOOK_PORT=$PORT ./shipsterbot startbot telegram
