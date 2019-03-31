@@ -13,31 +13,6 @@ import (
 	"github.com/m1kola/shipsterbot/internal/pkg/mocks/bot/mock_telegram"
 )
 
-func TestValidateWebhookPort(t *testing.T) {
-	t.Run("Valid port", func(t *testing.T) {
-		tests := []string{"443", "80", "88", "8443"}
-
-		for _, port := range tests {
-			err := ValidateWebhookPort(port)
-			if err != nil {
-				t.Errorf("Got an unexpected error: %s is a valid value", port)
-			}
-		}
-	})
-
-	t.Run("Invalid port", func(t *testing.T) {
-		tests := []string{"", "-1", "0", "1234"}
-
-		for _, port := range tests {
-			err := ValidateWebhookPort(port)
-			if err == nil {
-				t.Errorf("Expected an error, got positive result: %s is invalid value",
-					port)
-			}
-		}
-	})
-}
-
 func TestNewServerWithIncommingRequstLogger(t *testing.T) {
 	expectedAddr := ":8443"
 

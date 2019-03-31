@@ -4,25 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
-
-// ValidateWebhookPort returns an error if an invalid port has been provided
-func ValidateWebhookPort(port string) error {
-	allowedPorts := []string{"443", "80", "88", "8443"}
-
-	for _, allowedValue := range allowedPorts {
-		if port == allowedValue {
-			return nil
-		}
-	}
-
-	return fmt.Errorf(
-		"Wrong port. You can only use one of the following ports: %s",
-		strings.Join(allowedPorts, ", "))
-}
 
 // newServerWithIncommingRequstLogger creates a new server struct
 // with an incomming request logger

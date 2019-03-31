@@ -2,6 +2,7 @@ package cli
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -50,6 +51,14 @@ var startTelegramBotCmd = &cobra.Command{
 			newBotAppOptions = append(
 				newBotAppOptions,
 				telegram.WebhookTLS(TLSCertPath, TLSKeyPath),
+			)
+		}
+
+		if port, err := env.GetTelegramWebhookPort(); err == nil {
+			fmt.Println("port", port)
+			newBotAppOptions = append(
+				newBotAppOptions,
+				telegram.WebhookPort(port),
 			)
 		}
 

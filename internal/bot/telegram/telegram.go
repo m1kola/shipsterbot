@@ -38,11 +38,6 @@ func WebhookTLS(TLSCertPath, TLSKeyPath string) func(*BotApp) error {
 // WebhookPort sets a custom webhook port
 func WebhookPort(port string) func(*BotApp) error {
 	return func(app *BotApp) error {
-		err := ValidateWebhookPort(port)
-		if err != nil {
-			return err
-		}
-
 		app.serverConfig.port = port
 		return nil
 	}
