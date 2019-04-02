@@ -68,45 +68,23 @@ func TestNewBotApp(t *testing.T) {
 		})
 
 		t.Run("Custom port", func(t *testing.T) {
-			tests := []struct {
-				value           string
-				isErrorExpected bool
-			}{
-				// Valid values
-				{value: "443", isErrorExpected: false},
-				{value: "80", isErrorExpected: false},
-				{value: "88", isErrorExpected: false},
-				{value: "8443", isErrorExpected: false},
+			tests := []string{"443", "80", "88", "8443", "6000"}
 
-				// Invalid values
-				{value: "something", isErrorExpected: true},
-				{value: "10000", isErrorExpected: true},
-			}
-
-			for _, test := range tests {
-				t.Run(fmt.Sprintf("port %#v", test.value), func(t *testing.T) {
+			for _, port := range tests {
+				t.Run(fmt.Sprintf("port %#v", port), func(t *testing.T) {
 					app, err := NewBotApp(
 						storageMock,
 						"fake_token",
-						WebhookPort(test.value),
+						WebhookPort(port),
 					)
 
-					if test.isErrorExpected && err == nil {
-						t.Fatal("Expected an error, got nil")
-					}
-
-					if !test.isErrorExpected && err != nil {
+					if err != nil {
 						t.Fatalf("Unexpected error: %v", err)
 					}
 
-					// No need to check port, if we expect an error
-					if test.isErrorExpected {
-						return
-					}
-
-					if app.serverConfig.port != test.value {
+					if app.serverConfig.port != port {
 						t.Fatalf("%s expected as a port, got %s",
-							test.value, app.serverConfig.port)
+							port, app.serverConfig.port)
 					}
 				})
 			}
